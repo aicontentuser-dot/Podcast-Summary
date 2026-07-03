@@ -796,6 +796,20 @@ Object.entries(DEFAULT_PODCASTS).forEach(([k,v]) => { if(!PODCASTS[k]) PODCASTS[
 
 let episodes  = load("doac-eps-v3", SEED);
 
+// Repair episodes that got filed under a podcast NAME instead of its key
+// (round-trip bug in earlier sheet syncs) — fold them back into the real podcast
+{
+  let repaired = 0;
+  episodes.forEach(e => {
+    const k = e.podcast || "doac";
+    if (!PODCASTS[k]) {
+      const m = Object.entries(PODCASTS).find(([,p]) => (p.name||"").toLowerCase() === k.toLowerCase());
+      if (m) { e.podcast = m[0]; repaired++; }
+    }
+  });
+  if (repaired) save("doac-eps-v3", episodes);
+}
+
 // "How I Built This" is no longer a default — drop it if it was never actually used
 if (PODCASTS.hibt && !episodes.some(e => (e.podcast || "doac") === "hibt")) {
   delete PODCASTS.hibt;
@@ -852,6 +866,16 @@ function extractJson(raw){
   } catch(e) {
     throw new Error("Couldn't parse the AI response (likely cut off or malformed) — try again. " + e.message.slice(0,80));
   }
+}
+
+// The sheet's Podcast column may hold a key ("doac") or, from older pushes,
+// a display name ("Diary of a CEO"). Resolve either to the real key.
+function resolvePodKey(v){
+  const raw = (v || "").trim();
+  if (!raw) return "doac";
+  if (PODCASTS[raw]) return raw;
+  const byName = Object.entries(PODCASTS).find(([,p]) => (p.name||"").toLowerCase() === raw.toLowerCase());
+  return byName ? byName[0] : raw;
 }
 
 function getPodcast(key){
@@ -2388,15 +2412,16 @@ async function pushPodcasts(){
 
 // Sheet 2: Episodes
 async function pushEpisodes(){
-  const rows = [["Episode ID","Podcast","Podcast Type","Title","Guest","Date","Link","Has Breakdown","Show Notes"]];
+  const rows = [["Episode ID","Podcast Key","Podcast Type","Title","Guest","Date","Link","Has Breakdown","Show Notes","Podcast Name"]];
   episodes.forEach(e => {
     const type = getPodType(e.podcast);
     rows.push([
-      e.id, getPodcast(e.podcast).name || e.podcast,
+      e.id, e.podcast || "doac",
       PODCAST_TYPES[type]?.label || type,
       e.title||"", e.guest||"", e.date||"", e.link||"",
       summaries[e.id] ? "Yes" : "No",
-      e.desc||""
+      e.desc||"",
+      getPodcast(e.podcast).name || e.podcast
     ]);
   });
   await writeSheet("Episodes", rows);
@@ -2524,7 +2549,7 @@ async function loadFromSheets(silent){
     // Episodes — union by id. If this device only has the untouched starter
     // examples and the sheet has real data, drop the starters first.
     const sheetEps = epR.length > 1 ? epR.slice(1).filter(r => r[0]).map(r => ({
-      id:r[0], podcast:r[1]||"doac", title:r[3]||"", guest:r[4]||"",
+      id:r[0], podcast:resolvePodKey(r[1]), title:r[3]||"", guest:r[4]||"",
       date:r[5]||"", link:r[6]||"", desc:r[8]||""
     })) : [];
     if (sheetEps.length) {
