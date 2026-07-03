@@ -1,0 +1,2662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Podcast Summaries</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css"/>
+<script src="https://accounts.google.com/gsi/client" async></script>
+<style>
+/* ════════════════════════════════════════════════════════
+   TOKENS
+   ════════════════════════════════════════════════════════ */
+:root {
+  --bg:#f6f5f3; --surface:#fff; --surface-2:#f0eeeb; --surface-3:#e8e5e0;
+  --border:rgba(0,0,0,0.08); --border-strong:rgba(0,0,0,0.16);
+  --text:#1c1b19; --text-2:#5c5a56; --text-3:#9b9892;
+  --accent:#b5651d; --accent-bg:#fbeee1; --accent-text:#94501a;
+  --success-bg:#e9f3de; --success-text:#3a6b10;
+  --danger:#d44a4a; --danger-bg:#fbe9e9;
+  --radius:12px; --radius-sm:8px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#17171a; --surface:#232327; --surface-2:#2b2b30; --surface-3:#34343a;
+  --border:rgba(255,255,255,0.08); --border-strong:rgba(255,255,255,0.16);
+  --text:#f1f0ee; --text-2:#aaa8a3; --text-3:#6e6c67;
+  --accent:#e0935a; --accent-bg:#3a2a1c; --accent-text:#e8a872;
+  --success-bg:#1c3208; --success-text:#97c459;
+  --danger:#e07070; --danger-bg:#3a1f1f;
+}}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;}
+.shell{max-width:760px;margin:0 auto;padding:1.25rem 1rem 4rem;}
+@keyframes spin{to{transform:rotate(360deg);}}
+@media(max-width:480px){.shell{padding:1rem 0.75rem 3rem;}.hero-title{font-size:16px;}}
+
+/* ════════════════════════════════════════════════════════
+   CHROME — banner, topbar, nav, toast
+   ════════════════════════════════════════════════════════ */
+.setup-banner{background:var(--accent-bg);border:1px solid var(--accent);border-radius:var(--radius);padding:1rem 1.1rem;margin-bottom:1.25rem;font-size:13.5px;color:var(--accent-text);line-height:1.7;display:flex;gap:10px;align-items:flex-start;}
+.setup-banner i{font-size:18px;flex-shrink:0;margin-top:1px;}
+.setup-banner a{color:var(--accent-text);font-weight:600;}
+.setup-banner input{border:1px solid var(--accent);border-radius:var(--radius-sm);padding:6px 10px;font-size:13px;background:var(--surface);color:var(--text);width:100%;margin-top:6px;outline:none;}
+
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:1.25rem;}
+.logo{width:40px;height:40px;border-radius:11px;background:var(--text);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.topbar h1{font-size:17px;font-weight:700;letter-spacing:-0.01em;}
+.topbar p{font-size:12px;color:var(--text-3);margin-top:1px;}
+
+.nav{display:flex;gap:4px;background:var(--surface-2);padding:4px;border-radius:13px;margin-bottom:1.4rem;}
+.nav button{flex:1;padding:8px;border:none;border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;background:transparent;color:var(--text-2);transition:all 0.12s;}
+.nav button.active{background:var(--surface);color:var(--text);font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,0.08);}
+
+.section{display:none;}.section.visible{display:block;}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 20px;border-radius:100px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:opacity 0.2s;z-index:999;box-shadow:0 4px 16px rgba(0,0,0,0.2);white-space:nowrap;}
+.toast.show{opacity:1;}
+
+/* ════════════════════════════════════════════════════════
+   SHARED PRIMITIVES — buttons, fields, pills, cards
+   ════════════════════════════════════════════════════════ */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);border:1px solid var(--border-strong);background:var(--surface);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;text-decoration:none;white-space:nowrap;transition:all 0.12s;}
+.btn:hover{background:var(--surface-2);}
+.btn:disabled{opacity:0.5;cursor:default;}
+.btn i{font-size:15px;}
+.btn-sm{font-size:12px;padding:6px 12px;}
+.btn-ml{margin-left:auto;}
+.btn-primary{background:var(--text);color:var(--bg);border-color:var(--text);}
+.btn-primary:hover{opacity:0.87;background:var(--text);}
+.btn-fav.on{color:var(--danger);border-color:var(--danger);background:var(--danger-bg);}
+.btn-listen{color:var(--accent-text);border-color:var(--accent);background:var(--accent-bg);}
+.btn-danger{color:var(--danger);background:transparent;border-color:transparent;}
+.btn-danger:hover{background:var(--danger-bg);}
+.btn-google{background:#4285f4;color:#fff;border-color:#4285f4;}
+.icon-btn{background:none;border:none;cursor:pointer;color:var(--text-3);padding:2px;font-size:15px;}
+.icon-btn:hover{color:var(--danger);}
+.chip-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11.5px;cursor:pointer;color:var(--text-2);display:inline-flex;align-items:center;gap:4px;}
+.action-row{display:flex;align-items:center;gap:7px;margin-top:1rem;flex-wrap:wrap;}
+
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
+.field label{font-size:12px;font-weight:700;color:var(--text-2);}
+.field label span{font-weight:400;color:var(--text-3);}
+.field input,.field textarea,.field select{border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;font-size:14px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;width:100%;}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent);background:var(--surface);}
+.field textarea{resize:vertical;min-height:80px;}
+.field-hint{font-size:11.5px;color:var(--text-3);}
+
+.pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;}
+.pill{padding:6px 13px;border-radius:100px;border:1px solid var(--border);background:var(--surface);font-size:12.5px;color:var(--text-2);cursor:pointer;display:flex;align-items:center;gap:5px;font-weight:500;transition:all 0.12s;}
+.pill:hover{border-color:var(--border-strong);}
+.pill.on{background:var(--text);color:var(--bg);border-color:var(--text);}
+.pill .ct{opacity:0.6;font-size:11px;}
+.pill i{font-size:13px;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);}
+.divider{border:none;border-top:1px solid var(--border);margin:1.1rem 0;}
+.tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:0.9rem;}
+.tag{font-size:11.5px;padding:3px 10px;border-radius:100px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-2);font-weight:500;}
+.empty{text-align:center;padding:3rem 1rem;color:var(--text-3);font-size:14px;line-height:1.7;}
+.empty i{font-size:30px;display:block;margin-bottom:10px;}
+
+/* Modal */
+.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;align-items:center;justify-content:center;padding:1rem;}
+.modal-backdrop.open{display:flex;}
+.modal{background:var(--surface);border-radius:var(--radius);padding:1.4rem;width:100%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,0.3);}
+.modal h2{font-size:16px;font-weight:700;margin-bottom:1rem;}
+
+/* ════════════════════════════════════════════════════════
+   HOME — hero, mini-card rows
+   ════════════════════════════════════════════════════════ */
+.hero-card{padding:1.4rem;position:relative;overflow:hidden;}
+.hero-card::before,.summary-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),#e8a872);}
+.hero-meta{display:flex;gap:14px;align-items:flex-start;margin-bottom:1rem;}
+.hero-info{flex:1;min-width:0;}
+.hero-eyebrow{font-size:11px;letter-spacing:0.06em;color:var(--text-3);text-transform:uppercase;font-weight:600;margin-bottom:5px;display:flex;align-items:center;gap:5px;}
+.hero-title{font-size:19px;font-weight:700;line-height:1.3;margin-bottom:5px;letter-spacing:-0.01em;}
+.hero-guest{font-size:13.5px;color:var(--text-2);font-weight:500;margin-bottom:3px;}
+.hero-date{font-size:12px;color:var(--text-3);}
+
+.row-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;margin-top:1.4rem;}
+.row-header h2{font-size:14px;font-weight:700;}
+.row-scroll{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;}
+.row-scroll::-webkit-scrollbar{display:none;}
+.mini-card{padding:0.85rem;min-width:200px;max-width:200px;cursor:pointer;transition:all 0.12s;flex-shrink:0;}
+.mini-card:hover{border-color:var(--border-strong);transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.07);}
+.mini-card .mc-title{font-size:13px;font-weight:600;line-height:1.35;margin-bottom:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.mini-card .mc-guest{font-size:11.5px;color:var(--text-2);}
+.mini-card .mc-badge{font-size:10px;color:var(--success-text);background:var(--success-bg);padding:2px 7px;border-radius:100px;margin-top:6px;display:inline-flex;align-items:center;gap:3px;font-weight:600;}
+.mc-thumb-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.mc-pod-name{font-size:11px;color:var(--text-3);}
+
+/* Generate CTA + errors */
+.gen-cta{text-align:center;padding:1.6rem 1rem;}
+.gen-cta i.big{font-size:30px;color:var(--text-3);display:block;margin-bottom:10px;}
+.gen-cta p{font-size:13.5px;color:var(--text-3);line-height:1.6;max-width:300px;margin:0 auto 1.1rem;}
+.gen-error{font-size:12.5px;color:var(--danger);margin-top:10px;padding:9px 12px;background:var(--danger-bg);border-radius:var(--radius-sm);text-align:left;line-height:1.5;}
+
+/* ════════════════════════════════════════════════════════
+   BREAKDOWN — tabs, sections, article, save buttons
+   ════════════════════════════════════════════════════════ */
+.breakdown-tabs{display:flex;gap:4px;background:var(--surface-2);padding:4px;border-radius:10px;margin-bottom:1.2rem;}
+.bd-tab{flex:1;padding:7px 6px;border:none;border-radius:7px;font-size:12.5px;font-weight:500;cursor:pointer;background:transparent;color:var(--text-2);transition:all 0.12s;text-align:center;}
+.bd-tab.active{background:var(--surface);color:var(--text);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,0.08);}
+.bd-pane{display:none;}.bd-pane.visible{display:block;}
+
+.bd-sections{display:flex;flex-direction:column;gap:4px;}
+.bd-sec{border-left:3px solid var(--border-strong);padding:12px 14px;border-radius:0 var(--radius-sm) var(--radius-sm) 0;background:var(--surface-2);}
+.bd-sec.sec-summary{border-color:#6366f1;}
+.bd-sec.sec-ideas{border-color:#0ea5e9;}
+.bd-sec.sec-steps{border-color:#22c55e;}
+.bd-sec.sec-quotes{border-color:var(--accent);}
+.bd-sec.sec-recap{border-color:#a855f7;}
+.bd-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.bd-head h3{font-size:13px;font-weight:700;letter-spacing:0.01em;}
+.bd-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.bd-icon.ic-summary{background:#ede9fe;color:#6366f1;}
+.bd-icon.ic-ideas{background:#e0f2fe;color:#0ea5e9;}
+.bd-icon.ic-steps{background:#dcfce7;color:#22c55e;}
+.bd-icon.ic-quotes{background:var(--accent-bg);color:var(--accent-text);}
+.bd-icon.ic-recap{background:#fae8ff;color:#a855f7;}
+@media(prefers-color-scheme:dark){
+  .bd-icon.ic-summary{background:#2e1f6e;color:#a5b4fc;}
+  .bd-icon.ic-ideas{background:#0c2a3e;color:#38bdf8;}
+  .bd-icon.ic-steps{background:#0d2e18;color:#86efac;}
+  .bd-icon.ic-recap{background:#2e1040;color:#d8b4fe;}
+}
+.bd-text{font-size:14.5px;line-height:1.8;color:var(--text);}
+.bd-list{list-style:none;display:flex;flex-direction:column;gap:9px;}
+.bd-item{display:flex;gap:9px;align-items:flex-start;}
+.bd-num{font-size:11px;font-weight:700;color:var(--text-3);min-width:18px;padding-top:3px;flex-shrink:0;}
+.bd-item-text{font-size:14px;line-height:1.7;flex:1;}
+.bd-row{display:flex;gap:9px;align-items:flex-start;}
+.quote-block{border-left:3px solid var(--accent);padding:10px 14px;border-radius:0 var(--radius-sm) var(--radius-sm) 0;font-size:15px;line-height:1.65;font-style:italic;color:var(--text);flex:1;background:var(--surface);}
+
+/* News story card inside a breakdown */
+.story-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;}
+.story-headline{font-size:14px;font-weight:600;margin-bottom:5px;}
+.story-why{font-size:13px;color:var(--text-2);margin-bottom:4px;}
+.story-why b{font-weight:600;color:var(--accent-text);}
+.story-watch{font-size:13px;color:var(--text-2);}
+.story-watch b{font-weight:600;}
+
+/* 5-min read article */
+.read-article{font-size:15px;line-height:1.85;color:var(--text);}
+.read-article h4{font-weight:700;margin:1.2rem 0 0.5rem;text-transform:uppercase;font-size:11px;letter-spacing:0.07em;color:var(--text-3);}
+.read-article h4:first-child{margin-top:0;}
+.read-article p{margin-bottom:0.9rem;}
+.read-article p:last-child{margin-bottom:0;}
+.read-article .pullquote{border-left:3px solid var(--accent);margin:1.1rem 0;padding:10px 16px;font-size:16px;font-style:italic;line-height:1.6;color:var(--text-2);border-radius:0 var(--radius-sm) var(--radius-sm) 0;background:var(--accent-bg);flex:1;}
+
+.save-btn{background:none;border:1px solid var(--border-strong);border-radius:var(--radius-sm);width:27px;height:27px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-3);flex-shrink:0;font-size:14px;transition:all 0.12s;}
+.save-btn:hover{background:var(--surface-3);color:var(--text);}
+.save-btn.on{background:var(--accent-bg);border-color:var(--accent);color:var(--accent-text);}
+
+/* ════════════════════════════════════════════════════════
+   EPISODES TAB — search, groups, list, add form, panel
+   ════════════════════════════════════════════════════════ */
+.search-row{display:flex;gap:8px;align-items:center;margin-bottom:0.85rem;}
+.search-wrap{position:relative;flex:1;}
+.search-wrap i{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--text-3);font-size:16px;pointer-events:none;}
+.search-wrap input{width:100%;padding:10px 14px 10px 38px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);color:var(--text);outline:none;}
+.search-wrap input:focus{border-color:var(--accent);}
+
+/* Podcast rail — the primary navigation between shows */
+.pod-rail{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:0.9rem;scrollbar-width:none;}
+.pod-rail::-webkit-scrollbar{display:none;}
+.pod-chip{display:inline-flex;align-items:center;gap:7px;padding:6px 12px 6px 7px;border-radius:100px;border:1px solid var(--border);background:var(--surface);font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all 0.12s;}
+.pod-chip:hover{border-color:var(--border-strong);}
+.pod-chip.on{background:var(--text);color:var(--bg);border-color:var(--text);}
+.pod-chip.on .pc-ct{color:var(--bg);opacity:0.65;}
+.pod-chip .pc-ct{font-size:11px;font-weight:500;color:var(--text-3);}
+.pod-chip.pc-all{padding:6px 14px;}
+.pod-chip.pc-add{padding:6px 12px;color:var(--text-3);border-style:dashed;}
+.pod-chip.pc-add:hover{color:var(--text);border-color:var(--accent);}
+
+/* Podcast header card — shown when a single show is selected */
+.pod-hero{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.2rem;margin-bottom:0.9rem;}
+.pod-hero-top{display:flex;align-items:center;gap:14px;}
+.pod-hero-info{flex:1;min-width:0;}
+.pod-hero-info h2{font-size:16px;font-weight:700;letter-spacing:-0.01em;}
+.pod-hero-stats{font-size:12px;color:var(--text-3);margin-top:3px;}
+.pod-hero-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:0.9rem;}
+.pod-type-badge{font-size:10.5px;color:var(--text-3);background:var(--surface-2);padding:2px 8px;border-radius:100px;}
+.check-status{display:none;font-size:11px;color:var(--text-3);}
+
+/* Slim group headers in the All view */
+.pod-group{margin-bottom:1.35rem;}
+.pod-group-header{display:flex;align-items:center;gap:9px;padding:0 0 0.55rem;cursor:pointer;}
+.pod-group-header:hover h3{color:var(--accent-text);}
+.pod-group-header h3{font-size:13px;font-weight:700;transition:color 0.12s;}
+.pod-group-header .pgh-ct{font-size:12px;color:var(--text-3);}
+.pod-group-header .pgh-open{margin-left:auto;font-size:12px;color:var(--text-3);display:flex;align-items:center;gap:3px;}
+
+.suggestions{background:var(--success-bg);border:1px solid var(--success-text);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;}
+.suggestions-head{font-size:12px;font-weight:700;color:var(--success-text);margin-bottom:8px;display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;}
+.suggestions.collapsed .suggestions-head{margin-bottom:0;}
+.sug-toggle{margin-left:auto;font-weight:600;font-size:11.5px;display:flex;align-items:center;gap:3px;opacity:0.85;}
+.suggestion{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-top:1px solid rgba(0,0,0,0.06);}
+.suggestion-info{flex:1;min-width:0;}
+.suggestion-title{font-size:13px;font-weight:600;color:var(--text);}
+.suggestion-date{font-size:11px;color:var(--text-3);}
+.suggestion-add{background:var(--success-text);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.suggestions-more{padding-top:8px;border-top:1px solid rgba(0,0,0,0.06);}
+.suggestions-more button{background:none;border:none;cursor:pointer;color:var(--success-text);font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:4px;}
+
+.episode-list{display:flex;flex-direction:column;gap:6px;margin-bottom:0.4rem;}
+.ep-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:0.85rem 1rem;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all 0.12s;}
+.ep-item:hover{border-color:var(--border-strong);transform:translateY(-1px);box-shadow:0 2px 8px rgba(0,0,0,0.05);}
+.ep-item.active{border-color:var(--accent);background:var(--accent-bg);transform:none;box-shadow:none;}
+.ep-item.selected{border-color:var(--accent);background:var(--accent-bg);transform:none;box-shadow:none;}
+.ep-item.locked{opacity:0.55;cursor:default;}
+.ep-item.locked:hover{transform:none;box-shadow:none;border-color:var(--border);}
+.ep-check{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border-strong);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;color:transparent;background:var(--surface);transition:all 0.12s;}
+.ep-item.selected .ep-check{background:var(--accent);border-color:var(--accent);color:#fff;}
+.ep-item.locked .ep-check{background:var(--success-bg);border-color:var(--success-text);color:var(--success-text);}
+.ep-item-info{flex:1;min-width:0;}
+.ep-fav{background:none;border:none;cursor:pointer;color:var(--text-3);font-size:16px;padding:3px;flex-shrink:0;}
+.ep-fav.on{color:var(--danger);}
+.ep-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--success-text);background:var(--success-bg);padding:2px 7px;border-radius:100px;margin-top:4px;font-weight:600;}
+.ep-title-sm{font-size:13.5px;font-weight:600;line-height:1.3;margin-bottom:2px;}
+.ep-guest-sm{font-size:12px;color:var(--text-2);}
+.ep-date-sm{font-size:11px;color:var(--text-3);}
+
+/* Sticky bulk-generate bar */
+.bulk-bar{position:fixed;bottom:0;left:0;right:0;z-index:90;display:none;justify-content:center;padding:0 0.75rem calc(12px + env(safe-area-inset-bottom));pointer-events:none;}
+.bulk-bar.show{display:flex;}
+.bulk-bar-inner{pointer-events:auto;background:var(--text);color:var(--bg);border-radius:16px;padding:12px 16px;width:100%;max-width:560px;box-shadow:0 8px 28px rgba(0,0,0,0.3);}
+.bulk-bar-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.bulk-bar-msg{font-size:13px;font-weight:600;flex:1;min-width:140px;}
+.bulk-bar-sub{font-size:11.5px;opacity:0.65;font-weight:400;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:340px;}
+.bulk-btn{border:none;border-radius:100px;padding:7px 14px;font-size:12.5px;font-weight:700;cursor:pointer;background:rgba(255,255,255,0.14);color:var(--bg);white-space:nowrap;transition:opacity 0.12s;}
+.bulk-btn:hover{opacity:0.85;}
+.bulk-btn.primary{background:var(--accent);color:#fff;}
+.bulk-btn:disabled{opacity:0.4;cursor:default;}
+.bulk-progress{height:4px;border-radius:100px;background:rgba(255,255,255,0.18);margin-top:10px;overflow:hidden;}
+.bulk-progress-fill{height:100%;border-radius:100px;background:var(--accent);transition:width 0.3s;}
+@media(prefers-color-scheme:dark){.bulk-bar-inner{background:#f1f0ee;color:#17171a;}.bulk-btn{background:rgba(0,0,0,0.1);color:#17171a;}.bulk-progress{background:rgba(0,0,0,0.12);}}
+
+/* Catalogue modal */
+.modal.modal-lg{max-width:560px;max-height:min(80vh,640px);display:flex;flex-direction:column;}
+.cat-sub{font-size:12px;color:var(--text-3);margin:-0.6rem 0 0.8rem;}
+.cat-list{flex:1;overflow-y:auto;margin:0 -0.4rem;padding:0 0.4rem;display:flex;flex-direction:column;gap:5px;min-height:120px;}
+.cat-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:all 0.12s;background:var(--surface);}
+.cat-item:hover{border-color:var(--border-strong);}
+.cat-item.selected{border-color:var(--accent);background:var(--accent-bg);}
+.cat-item-info{flex:1;min-width:0;}
+.cat-item-title{font-size:13px;font-weight:600;line-height:1.35;}
+.cat-item-date{font-size:11px;color:var(--text-3);margin-top:1px;}
+.cat-footer{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:1rem;}
+.cat-count{font-size:12px;color:var(--text-3);margin-left:auto;}
+.cat-loading{text-align:center;padding:2.5rem 1rem;color:var(--text-3);font-size:13px;}
+
+.summary-panel{padding:1.3rem;margin-top:10px;position:relative;overflow:hidden;}
+.panel-title{font-size:16px;font-weight:700;line-height:1.3;margin-bottom:2px;}
+
+/* ════════════════════════════════════════════════════════
+   COLLECTION
+   ════════════════════════════════════════════════════════ */
+.sync-panel{padding:1rem 1.2rem;margin-bottom:1.1rem;}
+.sync-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.sync-title{font-size:13px;font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:6px;}
+.sync-title i{font-size:15px;color:#4285f4;}
+.sync-status{font-size:12px;color:var(--text-3);}
+
+.col-item{padding:1rem 1.1rem;margin-bottom:8px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+.col-item-body{flex:1;min-width:0;}
+.col-type{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--accent-text);margin-bottom:5px;display:flex;align-items:center;gap:4px;}
+.col-text{font-size:14px;line-height:1.6;}
+.col-src{font-size:12px;color:var(--text-3);margin-top:6px;display:flex;align-items:center;gap:4px;}
+.col-src i{font-size:11px;}
+
+/* ════════════════════════════════════════════════════════
+   PLAYBOOK — cards, statuses, life areas, weekly focus
+   ════════════════════════════════════════════════════════ */
+.section-head{font-size:13px;font-weight:700;margin-bottom:0.75rem;display:flex;align-items:center;gap:7px;}
+.section-head i{color:var(--accent-text);}
+.section-head .icon-btn{margin-left:auto;font-size:13px;}
+.section-head .icon-btn:hover{color:var(--text);}
+
+.pb-card{padding:1.1rem 1.2rem;margin-bottom:10px;transition:border-color 0.12s;}
+.pb-card:hover{border-color:var(--border-strong);}
+.pb-area-tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;padding:3px 10px;border-radius:100px;margin-bottom:8px;}
+.pb-insight{font-size:14.5px;line-height:1.6;color:var(--text);margin-bottom:10px;font-style:italic;}
+.pb-insight::before{content:'"';color:var(--accent-text);font-size:18px;line-height:1;}
+.pb-action-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-3);margin-bottom:5px;display:flex;align-items:center;gap:5px;}
+.pb-action{font-size:14px;line-height:1.65;color:var(--text-2);margin-bottom:10px;}
+.pb-action.loading{color:var(--text-3);font-style:italic;}
+.pb-footer{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.pb-source{font-size:12px;color:var(--text-3);display:flex;align-items:center;gap:4px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pb-source i{font-size:11px;}
+
+.status-btns{display:flex;gap:4px;margin-top:10px;}
+.status-btn{padding:4px 10px;border-radius:100px;border:1px solid var(--border);background:transparent;font-size:11.5px;font-weight:600;cursor:pointer;color:var(--text-3);transition:all 0.12s;white-space:nowrap;}
+.status-btn:hover{border-color:var(--border-strong);color:var(--text);}
+.status-btn.active-todo{background:#f0f0f0;color:#555;border-color:#ccc;}
+.status-btn.active-doing{background:#fff7e0;color:#b07700;border-color:#f0c040;}
+.status-btn.active-done{background:var(--success-bg);color:var(--success-text);border-color:var(--success-text);}
+.status-btn.active-revisit{background:var(--accent-bg);color:var(--accent-text);border-color:var(--accent);}
+@media(prefers-color-scheme:dark){
+  .status-btn.active-todo{background:#2a2a2a;color:#aaa;border-color:#444;}
+  .status-btn.active-doing{background:#2e2500;color:#f0c040;border-color:#6a5500;}
+}
+
+.area-colors-health{background:#fde8e8;color:#b91c1c;}
+.area-colors-mindset{background:#ede9fe;color:#6d28d9;}
+.area-colors-money{background:#fef3c7;color:#92400e;}
+.area-colors-relationships{background:#fce7f3;color:#9d174d;}
+.area-colors-habits{background:#d1fae5;color:#065f46;}
+.area-colors-creativity{background:#e0f2fe;color:#075985;}
+.area-colors-other{background:var(--surface-2);color:var(--text-3);}
+@media(prefers-color-scheme:dark){
+  .area-colors-health{background:#3f0f0f;color:#f87171;}
+  .area-colors-mindset{background:#2e1f5e;color:#c4b5fd;}
+  .area-colors-money{background:#3f2d00;color:#fcd34d;}
+  .area-colors-relationships{background:#3f0f2a;color:#f9a8d4;}
+  .area-colors-habits{background:#052e16;color:#6ee7b7;}
+  .area-colors-creativity{background:#0c2a3f;color:#7dd3fc;}
+}
+
+.focus-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;min-width:220px;max-width:220px;flex-shrink:0;}
+.focus-card .fc-area{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:100px;}
+.focus-card .fc-text{font-size:13px;line-height:1.55;color:var(--text);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.focus-card .fc-action{font-size:12px;color:var(--text-2);margin-top:6px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+
+/* ════════════════════════════════════════════════════════
+   NEWS DIGEST
+   ════════════════════════════════════════════════════════ */
+.nd-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px;}
+.nd-header h2{font-size:16px;font-weight:700;}
+.nd-header p{font-size:12px;color:var(--text-3);margin-top:2px;}
+.nd-header-btns{display:flex;gap:6px;flex-wrap:wrap;}
+.nd-topic-group{margin-bottom:1.4rem;}
+.nd-topic-head{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-3);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.nd-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.1rem;margin-bottom:8px;}
+.nd-card:hover{border-color:var(--border-strong);}
+.nd-card-head{display:flex;align-items:flex-start;gap:10px;}
+.nd-card-body{flex:1;min-width:0;}
+.nd-headline{font-size:14.5px;font-weight:600;line-height:1.35;margin-bottom:4px;}
+.nd-why{font-size:13px;color:var(--text-2);line-height:1.55;margin-bottom:4px;}
+.nd-watch{font-size:12.5px;color:var(--accent-text);display:flex;align-items:center;gap:4px;}
+.nd-watch i{font-size:13px;}
+.nd-meta{font-size:12px;color:var(--text-3);margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.nd-follow-btn{background:none;border:1px solid var(--border);border-radius:100px;padding:3px 10px;font-size:11.5px;cursor:pointer;color:var(--text-2);display:inline-flex;align-items:center;gap:4px;transition:all 0.12s;}
+.nd-follow-btn.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent-text);font-weight:600;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- Setup banner -->
+<div class="setup-banner" id="setup-banner">
+  <i class="ti ti-alert-circle"></i>
+  <div style="flex:1">
+    <strong>One-time setup:</strong> paste your Cloudflare Worker URL to enable AI generation.
+    <a href="https://dash.cloudflare.com" target="_blank" rel="noopener">Set up a free Worker →</a>
+    <input type="text" id="worker-url-input" placeholder="https://podcast-proxy.YOUR-SUBDOMAIN.workers.dev" oninput="saveWorkerUrl(this.value)"/>
+  </div>
+</div>
+
+<!-- Connect banner — nudge to restore the synced library -->
+<div class="setup-banner" id="connect-banner" style="display:none">
+  <i class="ti ti-cloud-download"></i>
+  <div style="flex:1">
+    <strong>Connect Google Sheets</strong> to load your saved breakdowns and keep this device in sync.
+    <div class="action-row" style="margin-top:8px">
+      <button class="btn btn-sm btn-primary" onclick="signInGoogle()"><i class="ti ti-brand-google"></i> Connect</button>
+      <button class="btn btn-sm" onclick="dismissConnectBanner()">Not now</button>
+    </div>
+  </div>
+</div>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="logo">🎙</div>
+  <div><h1>Podcast Summaries</h1><p>Deep-dive breakdowns on demand</p></div>
+</div>
+
+<!-- Nav -->
+<div class="nav" id="nav">
+  <button class="active" data-tab="home" onclick="showTab('home')">Home</button>
+  <button data-tab="browse" onclick="showTab('browse')">Episodes</button>
+  <button data-tab="collection" onclick="showTab('collection')">Collection</button>
+  <button data-tab="playbook" onclick="showTab('playbook')">Playbook</button>
+  <button data-tab="news" onclick="showTab('news')">News</button>
+</div>
+
+<!-- ══ HOME ═══════════════════════════════════════════ -->
+<div class="section visible" id="tab-home">
+  <div class="card hero-card">
+    <div class="hero-meta">
+      <div id="hero-thumb" style="width:72px;height:72px;border-radius:14px;background:var(--surface-3);flex-shrink:0"></div>
+      <div class="hero-info">
+        <div class="hero-eyebrow"><i class="ti ti-dice-5"></i> Random pick</div>
+        <div class="hero-title" id="home-title">—</div>
+        <div class="hero-guest" id="home-guest"></div>
+        <div class="hero-date" id="home-date"></div>
+      </div>
+    </div>
+    <div class="divider" style="margin-top:0"></div>
+    <div id="home-cta">
+      <div class="gen-cta">
+        <i class="ti ti-sparkles big"></i>
+        <p>Generate a breakdown — summary, key ideas, action steps, best quotes and a 5-min read.</p>
+        <button class="btn btn-primary" id="home-gen-btn" onclick="generate('home')"><i class="ti ti-sparkles"></i> Generate breakdown</button>
+        <div id="home-error"></div>
+      </div>
+    </div>
+    <div id="home-result" style="display:none"></div>
+    <div class="action-row" id="home-action-row" style="display:none">
+      <button class="btn btn-fav" id="home-fav-btn" onclick="toggleFav('home')"><i class="ti ti-heart" id="home-fav-icon"></i><span id="home-fav-label">Save</span></button>
+      <a class="btn btn-listen" id="home-listen-btn" href="#" target="_blank" rel="noopener" style="display:none"><i class="ti ti-headphones"></i> Listen</a>
+      <button class="btn btn-ml" onclick="loadRandom()"><i class="ti ti-refresh"></i> Shuffle</button>
+    </div>
+  </div>
+
+  <div id="home-recent-section" style="display:none">
+    <div class="row-header"><h2>Recently generated</h2></div>
+    <div class="row-scroll" id="home-recent"></div>
+  </div>
+
+  <div id="home-favs-section" style="display:none">
+    <div class="row-header"><h2>Your favourites</h2></div>
+    <div class="row-scroll" id="home-favs"></div>
+  </div>
+</div>
+
+<!-- ══ EPISODES ═══════════════════════════════════════ -->
+<div class="section" id="tab-browse">
+  <div class="search-row">
+    <div class="search-wrap">
+      <i class="ti ti-search"></i>
+      <input type="text" id="search-input" placeholder="Search episodes…" oninput="filterEps()"/>
+    </div>
+    <button onclick="checkAllPodcasts()" class="btn btn-sm" style="flex-shrink:0" title="Check all feeds for new episodes"><i class="ti ti-refresh"></i></button>
+    <button onclick="showAddEpModal()" class="btn btn-sm btn-primary" style="flex-shrink:0"><i class="ti ti-plus"></i> Add</button>
+  </div>
+  <div class="pod-rail" id="pod-rail"></div>
+  <div id="ep-groups"></div>
+
+  <div class="card summary-panel" id="panel" style="display:none">
+    <div class="hero-meta" style="margin-bottom:0.75rem">
+      <div id="panel-thumb" style="width:56px;height:56px;border-radius:12px;background:var(--surface-3);flex-shrink:0"></div>
+      <div style="flex:1;min-width:0">
+        <div class="panel-title" id="panel-title"></div>
+        <div class="ep-guest-sm" id="panel-guest" style="margin-top:2px"></div>
+        <div class="ep-date-sm" id="panel-date" style="margin-top:2px"></div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div id="panel-cta">
+      <div class="gen-cta">
+        <i class="ti ti-sparkles big"></i>
+        <p>Generate a breakdown — summary, key ideas, action steps, best quotes and a 5-min read.</p>
+        <button class="btn btn-primary" id="panel-gen-btn" onclick="generate('panel')"><i class="ti ti-sparkles"></i> Generate breakdown</button>
+        <div id="panel-error"></div>
+      </div>
+    </div>
+    <div id="panel-result" style="display:none"></div>
+    <div class="action-row" id="panel-action-row">
+      <button class="btn btn-fav" id="panel-fav-btn" onclick="toggleFav('panel')"><i class="ti ti-heart" id="panel-fav-icon"></i><span id="panel-fav-label">Save</span></button>
+      <a class="btn btn-listen" id="panel-listen-btn" href="#" target="_blank" rel="noopener" style="display:none"><i class="ti ti-headphones"></i> Listen</a>
+      <button class="btn btn-danger btn-ml" onclick="deleteEp()"><i class="ti ti-trash"></i> Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ COLLECTION ═════════════════════════════════════ -->
+<div class="section" id="tab-collection">
+  <div class="card sync-panel">
+    <div class="sync-row">
+      <div style="flex:1;min-width:0">
+        <div class="sync-title"><i class="ti ti-brand-google"></i> Google Sheets sync</div>
+        <div class="sync-status" id="sync-status">Not connected — auto-saves all data to your Sheet</div>
+      </div>
+      <button id="sync-signin-btn" class="btn btn-sm btn-google" onclick="signInGoogle()"><i class="ti ti-brand-google"></i> Connect Google</button>
+      <button id="sync-now-btn" class="btn btn-sm" onclick="syncAll()" style="display:none"><i class="ti ti-refresh"></i> Sync now</button>
+      <button id="sync-load-btn" class="btn btn-sm" onclick="loadFromSheets()"><i class="ti ti-cloud-download"></i> Load from Sheets</button>
+      <button id="sync-signout-btn" class="btn btn-sm" onclick="signOutGoogle()" style="display:none"><i class="ti ti-logout"></i> Sign out</button>
+    </div>
+  </div>
+  <div class="pills" id="pills"></div>
+  <div id="col-list"></div>
+  <div class="action-row" style="margin-top:1.2rem">
+    <button class="btn" onclick="exportData()"><i class="ti ti-download"></i> Export data</button>
+    <button class="btn" onclick="document.getElementById('import-input').click()"><i class="ti ti-upload"></i> Import data</button>
+    <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(event)"/>
+  </div>
+</div>
+
+<!-- ══ PLAYBOOK ═══════════════════════════════════════ -->
+<div class="section" id="tab-playbook">
+  <div id="weekly-focus-section" style="margin-bottom:1.2rem">
+    <div class="section-head">
+      <i class="ti ti-calendar-week"></i> This week's focus
+      <button class="icon-btn" onclick="manualRefreshWeeklyFocus()" title="Pick a fresh set"><i class="ti ti-refresh"></i></button>
+    </div>
+    <div class="row-scroll" id="weekly-focus-row"></div>
+  </div>
+  <div class="pills" id="playbook-pills"></div>
+  <div id="playbook-list"></div>
+</div>
+
+<!-- ══ NEWS DIGEST ════════════════════════════════════ -->
+<div class="section" id="tab-news">
+  <div class="nd-header">
+    <div>
+      <h2>News Digest</h2>
+      <p>Bookmarked stories from your news podcasts</p>
+    </div>
+    <div class="nd-header-btns">
+      <button class="btn btn-sm" onclick="setNdFilter('all')" id="nd-filter-all">All</button>
+      <button class="btn btn-sm" onclick="setNdFilter('follow')" id="nd-filter-follow"><i class="ti ti-bell"></i> Following</button>
+    </div>
+  </div>
+  <div class="pills" id="nd-topic-pills"></div>
+  <div id="nd-list"></div>
+</div>
+
+</div><!-- /shell -->
+
+<!-- Add Podcast Modal -->
+<div class="modal-backdrop" id="add-podcast-modal">
+  <div class="modal">
+    <h2>Add a podcast</h2>
+    <div class="field">
+      <label>Podcast name</label>
+      <input type="text" id="new-pod-name" placeholder="e.g. Raj Shamani"/>
+    </div>
+    <div class="field">
+      <label>Podcast type</label>
+      <select id="new-pod-type">
+        <option value="interview">🎙 Interview / personal dev</option>
+        <option value="news">📰 News / current affairs</option>
+        <option value="education">🔬 Education / science</option>
+        <option value="business">🏢 Business / startup stories</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Apple Podcasts ID <span>(optional — for artwork)</span></label>
+      <input type="text" id="new-pod-apple" placeholder="e.g. 1234567890 (from Apple Podcasts URL)"/>
+      <span class="field-hint">Find it in the Apple Podcasts URL: podcasts.apple.com/podcast/id<strong>THIS_NUMBER</strong></span>
+    </div>
+    <div class="field">
+      <label>RSS feed URL <span>(optional — enables new episode checking)</span></label>
+      <input type="text" id="new-pod-rss" placeholder="https://feeds.example.com/podcast"/>
+      <span class="field-hint">If you don't have this, just add the Apple ID above — the app will find the feed automatically</span>
+    </div>
+    <div class="action-row" style="margin-top:4px">
+      <button class="btn btn-primary" onclick="addPodcast()"><i class="ti ti-plus"></i> Add podcast</button>
+      <button class="btn" onclick="hideAddPodcastModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Episode Modal -->
+<div class="modal-backdrop" id="add-ep-modal">
+  <div class="modal">
+    <h2>Add an episode</h2>
+    <div class="field">
+      <label>Podcast</label>
+      <select id="new-podcast" onchange="handlePodcastSelect(this)"></select>
+    </div>
+    <div class="field">
+      <label>Episode title</label>
+      <input type="text" id="new-title" placeholder="James Smith: How I Built a £50M Business"/>
+      <span class="field-hint">Include guest name before a colon for best results</span>
+    </div>
+    <div class="field">
+      <label>Listen link <span>(optional)</span></label>
+      <input type="text" id="new-link" placeholder="Spotify, Apple Podcasts, or website URL"/>
+    </div>
+    <div class="field">
+      <label>Show notes <span>(optional — improves accuracy)</span></label>
+      <textarea id="new-desc" placeholder="Paste the episode description here…"></textarea>
+    </div>
+    <div class="action-row" style="margin-top:4px">
+      <button class="btn btn-primary" onclick="addEp()"><i class="ti ti-plus"></i> Add episode</button>
+      <button class="btn" onclick="hideAddEpModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Catalogue Modal — full feed history for one podcast -->
+<div class="modal-backdrop" id="catalogue-modal">
+  <div class="modal modal-lg">
+    <h2 id="cat-title">Catalogue</h2>
+    <p class="cat-sub" id="cat-sub">Every episode from the feed that isn't in your list yet.</p>
+    <div class="search-wrap" style="margin-bottom:0.7rem">
+      <i class="ti ti-search"></i>
+      <input type="text" id="cat-search" placeholder="Search the catalogue…" oninput="filterCatalogue(this.value)"/>
+    </div>
+    <div class="cat-list" id="cat-list"></div>
+    <div class="cat-footer">
+      <button class="btn btn-sm" id="cat-add-btn" onclick="catalogueAdd(false)"><i class="ti ti-plus"></i> Add</button>
+      <button class="btn btn-sm btn-primary" id="cat-gen-btn" onclick="catalogueAdd(true)"><i class="ti ti-sparkles"></i> Add &amp; generate</button>
+      <button class="btn btn-sm" onclick="hideCatalogue()">Close</button>
+      <span class="cat-count" id="cat-count"></span>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk generate bar -->
+<div class="bulk-bar" id="bulk-bar"></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ════════════════════════════════════════════════════════
+   1. CONFIG
+   ════════════════════════════════════════════════════════ */
+const DEFAULT_WORKER_URL = "https://podcast.aicontentuser.workers.dev";
+const GOOGLE_CLIENT_ID = "371519774048-9b6kv5i0boda3ja70frkbai5ql98gdv6.apps.googleusercontent.com";
+const SHEET_ID = "1qJcczUSmh-PJo0J-hgHJHx4s7kIigQIEEFVitreSTs0";
+const AI_MODEL = "claude-sonnet-4-6";
+
+/* ════════════════════════════════════════════════════════
+   2. PODCAST TYPES — sections, prompts, token budgets
+   ════════════════════════════════════════════════════════ */
+const PODCAST_TYPES = {
+  interview: {
+    label: "Interview / personal dev",
+    icon: "ti-microphone-2",
+    maxTokens: 3000,
+    sections: [
+      { key:"executive_summary", title:"Summary",      icon:"ti-file-text", type:"text",   cls:"sec-summary", icls:"ic-summary" },
+      { key:"key_ideas",         title:"Key ideas",    icon:"ti-stars",     type:"list",   cls:"sec-ideas",   icls:"ic-ideas"   },
+      { key:"action_steps",      title:"Action steps", icon:"ti-checklist", type:"list",   cls:"sec-steps",   icls:"ic-steps"   },
+      { key:"best_quotes",       title:"Best quotes",  icon:"ti-quote",     type:"quotes", cls:"sec-quotes",  icls:"ic-quotes"  },
+      { key:"one_minute_recap",  title:"Recap",        icon:"ti-clock",     type:"text",   cls:"sec-recap",   icls:"ic-recap"   }
+    ],
+    prompt: (ep, podName, desc, note) =>
+`Analyse this ${podName} podcast episode: "${ep.title}"${ep.guest ? " featuring "+ep.guest : ""}.${desc}${note}
+
+Be concise (max 3 key ideas, 3 action steps, 2 quotes).
+For five_min_read: 400-500 word narrative article with subheadings (## prefix), flowing paragraphs, one pullquote (> prefix). Insightful, not a list.
+
+Return ONLY valid JSON:
+{"tags":["tag1","tag2"],"executive_summary":"2-3 sentence overview","key_ideas":["idea"],"action_steps":["step"],"best_quotes":["quote"],"one_minute_recap":"punchy recap","five_min_read":"## Heading\\n\\nText.\\n\\n> Pullquote.\\n\\n## Heading\\n\\nText."}`
+  },
+
+  news: {
+    label: "News / current affairs",
+    icon: "ti-news",
+    maxTokens: 1500,
+    sections: [
+      { key:"top_stories",      title:"Top stories",   icon:"ti-news",        type:"stories", cls:"sec-summary", icls:"ic-summary" },
+      { key:"quick_context",    title:"Quick context", icon:"ti-info-circle", type:"list",    cls:"sec-ideas",   icls:"ic-ideas"   },
+      { key:"what_to_watch",    title:"What to watch", icon:"ti-eye",         type:"list",    cls:"sec-steps",   icls:"ic-steps"   },
+      { key:"one_minute_recap", title:"Recap",         icon:"ti-clock",       type:"text",    cls:"sec-recap",   icls:"ic-recap"   }
+    ],
+    prompt: (ep, podName, desc, note) =>
+`Analyse this ${podName} news podcast episode: "${ep.title}".${desc}${note}
+
+Extract the main news stories covered. For each story include: a headline, why it matters (1 sentence), and what to watch next (1 sentence).
+Also give quick context bullets and a one-minute recap.
+
+Return ONLY valid JSON:
+{"tags":["tag1","tag2"],"top_stories":[{"headline":"Story headline","why_matters":"Why this matters","what_watch":"What to watch next"}],"quick_context":["background context point"],"what_to_watch":["broader trend or follow-up to watch"],"one_minute_recap":"punchy recap of the whole episode"}`
+  },
+
+  education: {
+    label: "Education / science",
+    icon: "ti-flask",
+    maxTokens: 3000,
+    sections: [
+      { key:"core_concept",       title:"Core concept",       icon:"ti-bulb",      type:"text",   cls:"sec-summary", icls:"ic-summary" },
+      { key:"science_behind",     title:"The science",        icon:"ti-atom",      type:"list",   cls:"sec-ideas",   icls:"ic-ideas"   },
+      { key:"practical_protocol", title:"Practical protocol", icon:"ti-checklist", type:"list",   cls:"sec-steps",   icls:"ic-steps"   },
+      { key:"myths_debunked",     title:"Myths debunked",     icon:"ti-circle-x",  type:"list",   cls:"sec-quotes",  icls:"ic-quotes"  },
+      { key:"best_quotes",        title:"Best quotes",        icon:"ti-quote",     type:"quotes", cls:"sec-quotes",  icls:"ic-quotes"  },
+      { key:"one_minute_recap",   title:"Recap",              icon:"ti-clock",     type:"text",   cls:"sec-recap",   icls:"ic-recap"   }
+    ],
+    prompt: (ep, podName, desc, note) =>
+`Analyse this ${podName} education/science podcast episode: "${ep.title}"${ep.guest ? " with "+ep.guest : ""}.${desc}${note}
+
+Extract the core concept clearly, the science/evidence behind it, a practical protocol someone can follow, common myths it debunks, and best quotes.
+
+Return ONLY valid JSON:
+{"tags":["tag1","tag2"],"core_concept":"Clear 2-3 sentence explanation of the main concept","science_behind":["key scientific finding or mechanism"],"practical_protocol":["specific actionable protocol step"],"myths_debunked":["Myth: X. Reality: Y."],"best_quotes":["quote"],"one_minute_recap":"punchy recap","five_min_read":"## Heading\\n\\nText.\\n\\n> Pullquote.\\n\\n## Heading\\n\\nText."}`
+  },
+
+  business: {
+    label: "Business / startup stories",
+    icon: "ti-building-store",
+    maxTokens: 3000,
+    sections: [
+      { key:"the_story",        title:"The story",       icon:"ti-book-2",     type:"text",   cls:"sec-summary", icls:"ic-summary" },
+      { key:"key_decisions",    title:"Key decisions",   icon:"ti-git-branch", type:"list",   cls:"sec-ideas",   icls:"ic-ideas"   },
+      { key:"lessons_learned",  title:"Lessons learned", icon:"ti-school",     type:"list",   cls:"sec-steps",   icls:"ic-steps"   },
+      { key:"best_quotes",      title:"Best quotes",     icon:"ti-quote",      type:"quotes", cls:"sec-quotes",  icls:"ic-quotes"  },
+      { key:"one_minute_recap", title:"Recap",           icon:"ti-clock",      type:"text",   cls:"sec-recap",   icls:"ic-recap"   }
+    ],
+    prompt: (ep, podName, desc, note) =>
+`Analyse this ${podName} business/startup podcast episode: "${ep.title}"${ep.guest ? " featuring "+ep.guest : ""}.${desc}${note}
+
+Extract the business story, pivotal decisions made, lessons any entrepreneur can apply, and best quotes.
+For five_min_read: engaging 400-500 word narrative with subheadings (## prefix) and one pullquote (> prefix).
+
+Return ONLY valid JSON:
+{"tags":["tag1","tag2"],"the_story":"2-3 sentence narrative of what this episode covers","key_decisions":["decision with outcome"],"lessons_learned":["concrete lesson"],"best_quotes":["quote"],"one_minute_recap":"punchy recap","five_min_read":"## Heading\\n\\nText.\\n\\n> Pullquote.\\n\\n## Heading\\n\\nText."}`
+  }
+};
+
+const DEFAULT_PODCAST_TYPE = { doac:"interview", huberman:"education", hibt:"business" };
+
+const LIFE_AREAS = {
+  health:        { label:"Health & fitness",      icon:"ti-heart-rate-monitor", colorCls:"area-colors-health"        },
+  mindset:       { label:"Mindset & psychology",  icon:"ti-brain",              colorCls:"area-colors-mindset"       },
+  money:         { label:"Money & business",      icon:"ti-chart-line",         colorCls:"area-colors-money"         },
+  relationships: { label:"Relationships",         icon:"ti-users",              colorCls:"area-colors-relationships" },
+  habits:        { label:"Habits & productivity", icon:"ti-checklist",          colorCls:"area-colors-habits"        },
+  creativity:    { label:"Creativity",            icon:"ti-bulb",               colorCls:"area-colors-creativity"    },
+  other:         { label:"Other",                 icon:"ti-tag",                colorCls:"area-colors-other"         }
+};
+
+const STATUSES = [
+  { key:"todo",    label:"Not started" },
+  { key:"doing",   label:"In progress" },
+  { key:"done",    label:"Done ✓"      },
+  { key:"revisit", label:"Revisit"     }
+];
+
+/* ════════════════════════════════════════════════════════
+   3. STATE + STORAGE
+   localStorage keys are unchanged from the previous build,
+   so existing data carries over automatically.
+   ════════════════════════════════════════════════════════ */
+function load(k, fb){ try{ const r = localStorage.getItem(k); return r ? JSON.parse(r) : fb; }catch(e){ return fb; } }
+function save(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+
+const PODCAST_COLORS = [
+  "linear-gradient(135deg,#1a1a1a,#3a3936)",
+  "linear-gradient(135deg,#1e3a5f,#2d6a9f)",
+  "linear-gradient(135deg,#7b2d00,#c04a00)",
+  "linear-gradient(135deg,#1a3a1a,#2d6a2d)",
+  "linear-gradient(135deg,#3a1a5f,#6a2d9f)",
+  "linear-gradient(135deg,#5f1a1a,#9f2d2d)",
+  "linear-gradient(135deg,#1a3a3a,#2d6a6a)",
+  "linear-gradient(135deg,#3a3a1a,#6a6a2d)"
+];
+
+const DEFAULT_PODCASTS = {
+  doac:    { name:"Diary of a CEO",   abbr:"DC", appleId:"1291423644", podType:"interview", gradient:PODCAST_COLORS[0], art:null },
+  huberman:{ name:"Huberman Lab",     abbr:"HL", appleId:"1545953110", podType:"education", gradient:PODCAST_COLORS[1], art:null }
+};
+
+const SEED = [
+  { id:"seed-1", podcast:"doac", title:"Steven Bartlett: Why I Started This Podcast",                    guest:"Steven Bartlett",    link:"", desc:"", date:"" },
+  { id:"seed-2", podcast:"doac", title:"Dr Andrew Huberman: The Science of Sleep, Focus and Performance", guest:"Dr Andrew Huberman", link:"", desc:"", date:"" },
+  { id:"seed-3", podcast:"doac", title:"James Clear: Atomic Habits and the Science of Tiny Changes",      guest:"James Clear",        link:"", desc:"", date:"" }
+];
+
+let workerUrl = localStorage.getItem("worker-url") || DEFAULT_WORKER_URL;
+let PODCASTS  = load("doac-podcasts-v1", DEFAULT_PODCASTS);
+Object.entries(DEFAULT_PODCASTS).forEach(([k,v]) => { if(!PODCASTS[k]) PODCASTS[k] = v; });
+
+let episodes  = load("doac-eps-v3", SEED);
+
+// "How I Built This" is no longer a default — drop it if it was never actually used
+if (PODCASTS.hibt && !episodes.some(e => (e.podcast || "doac") === "hibt")) {
+  delete PODCASTS.hibt;
+  savePodcasts();
+}
+let summaries = load("doac-sums-v3", {});
+let favs      = new Set(load("doac-favs-v3", []));
+let col       = load("doac-col-v3", []);
+let pbItems   = load("doac-pb-v1", []);
+let newsItems = load("doac-news-v1", []);
+let newEpSuggestions = load("doac-new-eps-v1", {});   // { podKey: [{title,guest,date,link,desc}] }
+if (!PODCASTS.hibt && newEpSuggestions.hibt) { delete newEpSuggestions.hibt; save("doac-new-eps-v1", newEpSuggestions); }
+let weeklyFocus = load("doac-weekly-focus-v1", { items:{}, refreshedAt:0 });
+
+let filtered = [...episodes];
+let curId = null, homeId = null;
+let colFilter = "all", pbFilter = "all", ndFilter = "all";
+let expandedSuggestions = {};   // { podKey: bool } — session only
+
+// Episodes tab UI state (session only)
+let podFilter = "all";                 // "all" | podKey — driven by the pod rail
+let selectMode = false;                // bulk-select mode on the episode list
+let selectedEps = new Set();           // episode ids ticked for bulk generate
+let feedCache = {};                    // { podKey: { items, fetchedAt } } — full feed history
+let catState = { podKey:null, items:[], selected:new Set(), q:"" };
+let bulk = { active:false, total:0, done:0, failed:[], cancelled:false, current:"" };
+let bulkResult = null;                 // { ok, failed:[] } — shown in bar until dismissed
+let currentTab = "home";
+
+const BULK_CAP = 20;                   // max episodes per generate run
+const BULK_COST_PER_EP = 0.03;         // rough estimate shown in the bar
+
+function savePodcasts(){ save("doac-podcasts-v1", PODCASTS); }
+function saveEpisodes(){ save("doac-eps-v3", episodes); }
+function saveSummaries(){ save("doac-sums-v3", summaries); }
+function saveFavs(){ save("doac-favs-v3", [...favs]); }
+function saveCol(){ save("doac-col-v3", col); }
+function savePb(){ save("doac-pb-v1", pbItems); }
+function saveNews(){ save("doac-news-v1", newsItems); }
+function saveNewEps(){ save("doac-new-eps-v1", newEpSuggestions); }
+
+/* ════════════════════════════════════════════════════════
+   4. HELPERS
+   ════════════════════════════════════════════════════════ */
+function esc(s){ const d = document.createElement("div"); d.textContent = s ?? ""; return d.innerHTML; }
+function escAttr(s){ return String(s ?? "").replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/"/g,"&quot;").replace(/\n/g," "); }
+function toast(msg){ const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"), 2200); }
+function extractJson(raw){
+  const t = raw.replace(/```json|```/g,"").trim();
+  const a = t.indexOf("{"), b = t.lastIndexOf("}");
+  if (a === -1 || b === -1) throw new Error("No JSON found — raw: " + t.slice(0,200));
+  try {
+    return JSON.parse(t.slice(a, b+1));
+  } catch(e) {
+    throw new Error("Couldn't parse the AI response (likely cut off or malformed) — try again. " + e.message.slice(0,80));
+  }
+}
+
+function getPodcast(key){
+  return PODCASTS[key] || { name:key, abbr:String(key).slice(0,2).toUpperCase(), gradient:PODCAST_COLORS[4], art:null };
+}
+function getPodType(podKey){
+  const pod = getPodcast(podKey);
+  return pod.podType || DEFAULT_PODCAST_TYPE[podKey] || "interview";
+}
+function getTypeDef(ep){ return PODCAST_TYPES[getPodType(ep.podcast)] || PODCAST_TYPES.interview; }
+function isNewsEpisode(epId){
+  const ep = episodes.find(e => e.id === epId);
+  return !!ep && getPodType(ep.podcast) === "news";
+}
+
+// Section title/icon lookup across all types (Collection pills, saved items)
+function sectionMeta(key){
+  for (const t of Object.values(PODCAST_TYPES)) {
+    const s = t.sections.find(s => s.key === key);
+    if (s) return s;
+  }
+  if (key === "five_min_read") return { key, title:"5-min read", icon:"ti-book" };
+  return { key, title:key, icon:"ti-tag" };
+}
+
+/* ════════════════════════════════════════════════════════
+   5. THUMBNAILS
+   Fallback is rebuilt from data attributes on <img> error —
+   no global registry needed.
+   ════════════════════════════════════════════════════════ */
+const THUMB_SIZES = { xs:{d:22,r:6,f:8}, sm:{d:40,r:9,f:11}, md:{d:56,r:12,f:13}, lg:{d:72,r:14,f:17} };
+
+function thumbBaseStyle(size){
+  const s = THUMB_SIZES[size] || THUMB_SIZES.md;
+  return `width:${s.d}px;height:${s.d}px;border-radius:${s.r}px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.15);`;
+}
+function thumbFallbackHtml(podKey, size, id){
+  const p = getPodcast(podKey);
+  const s = THUMB_SIZES[size] || THUMB_SIZES.md;
+  const idAttr = id ? ` id="${id}"` : "";
+  return `<div${idAttr} style="${thumbBaseStyle(size)}background:${p.gradient};display:flex;align-items:center;justify-content:center;font-size:${s.f}px;font-weight:700;color:#fff">${esc(p.abbr)}</div>`;
+}
+function thumbHtml(podKey, size, id){
+  const p = getPodcast(podKey);
+  if (!p.art) return thumbFallbackHtml(podKey, size, id);
+  const idAttr = id ? ` id="${id}"` : "";
+  return `<img${idAttr} data-pod="${escAttr(podKey)}" data-size="${size}" src="${escAttr(p.art)}" alt="${escAttr(p.name)}" style="${thumbBaseStyle(size)}object-fit:cover" onerror="thumbFallback(this)">`;
+}
+function thumbFallback(img){
+  const wrap = document.createElement("div");
+  wrap.innerHTML = thumbFallbackHtml(img.dataset.pod, img.dataset.size, img.id || "");
+  img.replaceWith(wrap.firstChild);
+}
+function renderCurrentThumbs(){
+  const heroEp = episodes.find(e => e.id === homeId);
+  const heroEl = document.getElementById("hero-thumb");
+  if (heroEp && heroEl) heroEl.outerHTML = thumbHtml(heroEp.podcast, "lg", "hero-thumb");
+  const panelEp = episodes.find(e => e.id === curId);
+  const panelEl = document.getElementById("panel-thumb");
+  if (panelEp && panelEl) panelEl.outerHTML = thumbHtml(panelEp.podcast, "md", "panel-thumb");
+}
+
+/* ════════════════════════════════════════════════════════
+   6. WORKER CALLS — /ai and /fetch
+   ════════════════════════════════════════════════════════ */
+async function proxyFetch(fetchUrl){
+  if (!workerUrl) throw new Error("Worker URL not set");
+  const res = await fetch(workerUrl + "/fetch", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fetchUrl })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data.text;
+}
+
+async function aiRequest(prompt, maxTokens){
+  if (!workerUrl) throw new Error("Worker URL not set — paste it in the setup banner above.");
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 120000);   // 2 min cap so a stalled request can't hang the queue
+  let res;
+  try {
+    res = await fetch(workerUrl + "/ai", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model:AI_MODEL, max_tokens:maxTokens, messages:[{ role:"user", content:prompt }] }),
+      signal: ctrl.signal
+    });
+  } catch(e) {
+    throw new Error(e.name === "AbortError" ? "Request timed out after 2 minutes — try again." : e.message);
+  } finally {
+    clearTimeout(timer);
+  }
+  if (!res.ok) {
+    let detail = "";
+    try { const j = await res.json(); detail = j.error?.message || JSON.stringify(j); } catch(e){}
+    throw new Error("API error " + res.status + (detail ? ": " + detail : ""));
+  }
+  const data = await res.json();
+  const tb = data.content?.find(b => b.type === "text");
+  if (!tb?.text) throw new Error("No text in response: " + JSON.stringify(data).slice(0,200));
+  return { text: tb.text, truncated: data.stop_reason === "max_tokens" };
+}
+
+async function callAI(ep){
+  const type = getTypeDef(ep);
+  const desc = ep.desc ? "\nShow notes: " + ep.desc.slice(0,600) : "";
+  const note = !ep.desc ? "\nNo description provided — use your general knowledge of this episode/guest if recognisable, else give a plausible general take." : "";
+  const prompt = type.prompt(ep, getPodcast(ep.podcast).name, desc, note);
+  let r = await aiRequest(prompt, type.maxTokens);
+  if (r.truncated) r = await aiRequest(prompt, Math.min(type.maxTokens * 2, 6000));   // response was cut off — one retry with more room
+  if (r.truncated) throw new Error("The AI response was cut off twice — try again in a moment.");
+  return extractJson(r.text);
+}
+
+/* ════════════════════════════════════════════════════════
+   7. PODCAST LIBRARY — add, delete, artwork
+   ════════════════════════════════════════════════════════ */
+function renderPodcastSelect(){
+  const sel = document.getElementById("new-podcast");
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = Object.entries(PODCASTS).map(([k,p]) => `<option value="${escAttr(k)}">${esc(p.name)}</option>`).join("")
+    + '<option value="__new__">+ Add new podcast…</option>';
+  if (cur && PODCASTS[cur]) sel.value = cur;
+}
+function handlePodcastSelect(sel){
+  if (sel.value === "__new__") {
+    sel.value = (lastAddPod && PODCASTS[lastAddPod]) ? lastAddPod : Object.keys(PODCASTS)[0];
+    showAddPodcastModal();
+  } else {
+    lastAddPod = sel.value;
+  }
+}
+function showAddPodcastModal(){
+  document.getElementById("add-podcast-modal").classList.add("open");
+  document.getElementById("new-pod-name").focus();
+}
+function hideAddPodcastModal(){
+  document.getElementById("add-podcast-modal").classList.remove("open");
+  ["new-pod-name","new-pod-apple","new-pod-rss"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("new-pod-type").value = "interview";
+}
+function addPodcast(){
+  const name = document.getElementById("new-pod-name").value.trim();
+  if (!name) { toast("Enter a podcast name"); return; }
+  const appleId = document.getElementById("new-pod-apple").value.trim() || null;
+  const rssUrl  = document.getElementById("new-pod-rss").value.trim() || null;
+  const podType = document.getElementById("new-pod-type").value || "interview";
+  const abbr = name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2) || name.slice(0,2).toUpperCase();
+  const key  = name.toLowerCase().replace(/[^a-z0-9]/g,"").slice(0,20) + "-" + Date.now().toString(36);
+  const usedColors = Object.values(PODCASTS).map(p => p.gradient);
+  const gradient = PODCAST_COLORS.find(c => !usedColors.includes(c)) || PODCAST_COLORS[Math.floor(Math.random()*PODCAST_COLORS.length)];
+  PODCASTS[key] = { name, abbr, appleId, rssUrl, podType, gradient, art:null };
+  savePodcasts();
+  renderPodcastSelect();
+  document.getElementById("new-podcast").value = key;
+  hideAddPodcastModal();
+  podFilter = key;
+  showTab("browse");
+  toast(`"${name}" added as ${PODCAST_TYPES[podType]?.label || podType}`);
+  if (appleId) fetchPodcastArtwork();
+  scheduleSave();
+}
+function deletePodcast(key){
+  const pod = getPodcast(key);
+  const epIds = episodes.filter(e => e.podcast === key).map(e => e.id);
+  const msg = epIds.length
+    ? `Remove "${pod.name}" and its ${epIds.length} episode${epIds.length>1?"s":""}? This cannot be undone.`
+    : `Remove "${pod.name}"?`;
+  if (!confirm(msg)) return;
+  delete PODCASTS[key];
+  delete newEpSuggestions[key];
+  episodes = episodes.filter(e => e.podcast !== key);
+  epIds.forEach(id => { delete summaries[id]; favs.delete(id); });
+  savePodcasts(); saveNewEps(); saveEpisodes(); saveSummaries(); saveFavs();
+  filtered = [...episodes];
+  if (podFilter === key) podFilter = "all";
+  delete feedCache[key];
+  if (curId && epIds.includes(curId)) {
+    curId = null;
+    document.getElementById("panel").style.display = "none";
+  }
+  renderPodcastSelect(); renderEpGroups(); renderHomeRows();
+  scheduleSave();
+  toast(`"${pod.name}" removed`);
+}
+function showRssPrompt(podKey){
+  const pod = getPodcast(podKey);
+  const url = prompt(`Enter the RSS feed URL for "${pod.name}":\n(e.g. https://feeds.simplecast.com/abc123)`, pod.rssUrl || "");
+  if (url === null) return;
+  PODCASTS[podKey].rssUrl = url.trim();
+  savePodcasts();
+  if (url.trim()) { toast("RSS URL saved — tap Check to fetch episodes"); renderEpGroups(); }
+}
+
+// Artwork via iTunes lookup — goes through /fetch (not the old /sheets hack),
+// with a direct fetch fallback since the iTunes API allows CORS.
+async function fetchPodcastArtwork(){
+  const keys = Object.entries(PODCASTS).filter(([,p]) => p.appleId && !p.art).map(([k]) => k);
+  if (!keys.length) return;
+  let changed = false;
+  await Promise.all(keys.map(async k => {
+    const lookupUrl = `https://itunes.apple.com/lookup?id=${PODCASTS[k].appleId}&entity=podcast`;
+    let art = null;
+    if (workerUrl) {
+      try { art = JSON.parse(await proxyFetch(lookupUrl))?.results?.[0]?.artworkUrl600 || null; } catch(e){}
+    }
+    if (!art) {
+      try { art = (await (await fetch(lookupUrl)).json())?.results?.[0]?.artworkUrl600 || null; } catch(e){}
+    }
+    if (art) { PODCASTS[k].art = art; changed = true; }
+  }));
+  if (changed) {
+    savePodcasts();
+    renderEpGroups(); renderHomeRows(); renderCurrentThumbs();
+  }
+}
+
+/* ════════════════════════════════════════════════════════
+   8. RSS FEED CHECKING — new episode suggestions
+   ════════════════════════════════════════════════════════ */
+async function getRssFeedUrl(appleId){
+  const text = await proxyFetch(`https://itunes.apple.com/lookup?id=${appleId}&entity=podcast`);
+  const feedUrl = JSON.parse(text)?.results?.[0]?.feedUrl;
+  if (!feedUrl) throw new Error("No RSS feed found for Apple ID: " + appleId);
+  return feedUrl;
+}
+
+function parseRssFeed(xmlText, limit = Infinity){
+  const xml = new DOMParser().parseFromString(xmlText, "text/xml");
+  if (xml.querySelector("parsererror")) throw new Error("Invalid RSS feed XML");
+  return [...xml.querySelectorAll("item")].slice(0, limit).map(it => {
+    const title = it.querySelector("title")?.textContent?.trim() || "";
+    const pubDate = it.querySelector("pubDate")?.textContent?.trim() || "";
+    const link = it.querySelector("link")?.textContent?.trim()
+      || it.querySelector("enclosure")?.getAttribute("url") || "";
+    const descEl = it.querySelector("description");
+    const desc = descEl ? (descEl.textContent || "").replace(/<[^>]+>/g,"").replace(/\s+/g," ").trim().slice(0,500) : "";
+    const d = pubDate ? new Date(pubDate) : null;
+    const date = d ? d.toLocaleDateString("en-GB",{ day:"numeric", month:"short", year:"numeric" }) : "";
+    const gm = title.match(/^(.+?):/);
+    const guest = gm ? gm[1].trim().slice(0,70) : "";
+    return { title, guest, date, link, desc };
+  });
+}
+
+async function checkNewEpisodes(podKey){
+  const pod = getPodcast(podKey);
+  const statusEl = document.getElementById(`check-status-${podKey}`);
+  const setStatus = (text) => { if (statusEl) { statusEl.textContent = text; statusEl.style.display = text ? "inline" : "none"; } };
+
+  if (!pod.appleId && !pod.rssUrl) {
+    toast(`"${pod.name}" has no Apple ID or RSS URL — edit the podcast to add one`);
+    setStatus("No feed URL");
+    return;
+  }
+  setStatus("Checking…");
+  try {
+    const feedUrl = pod.rssUrl || await getRssFeedUrl(pod.appleId);
+    const feedEps = parseRssFeed(await proxyFetch(feedUrl), 20);
+    const existingTitles = new Set(
+      episodes.filter(e => e.podcast === podKey).map(e => e.title.toLowerCase().trim())
+    );
+    const newOnes = feedEps.filter(fe => !existingTitles.has(fe.title.toLowerCase().trim()));
+    newEpSuggestions[podKey] = newOnes;
+    expandedSuggestions[podKey] = false;
+    saveNewEps();
+    renderEpGroups();
+    setStatus("");
+    toast(newOnes.length
+      ? `${newOnes.length} new episode${newOnes.length>1?"s":""} found for "${pod.name}"`
+      : `"${pod.name}" — no new episodes found`);
+  } catch(e) {
+    setStatus("Failed: " + e.message.slice(0,50));
+    toast("Feed check failed: " + e.message.slice(0,70));
+  }
+}
+
+async function checkAllPodcasts(){
+  const podKeys = Object.keys(PODCASTS).filter(k => PODCASTS[k].appleId || PODCASTS[k].rssUrl);
+  if (!podKeys.length) { toast("Add Apple Podcast IDs to your podcasts to enable feed checking"); return; }
+  toast("Checking all feeds…");
+  await Promise.all(podKeys.map(k => checkNewEpisodes(k).catch(()=>{})));
+}
+
+function addSuggestedEp(podKey, idx){
+  const fe = (newEpSuggestions[podKey] || [])[idx];
+  if (!fe) return;
+  episodes.unshift({
+    id: "ep-" + Date.now() + "-" + idx,
+    podcast: podKey,
+    title: fe.title, guest: fe.guest, link: fe.link, desc: fe.desc, date: fe.date
+  });
+  saveEpisodes();
+  newEpSuggestions[podKey].splice(idx, 1);
+  saveNewEps();
+  filtered = [...episodes];
+  renderEpGroups();
+  scheduleSave();
+  toast("Episode added");
+}
+
+function dismissSuggestion(podKey, idx){
+  if (!newEpSuggestions[podKey]) return;
+  newEpSuggestions[podKey].splice(idx, 1);
+  saveNewEps();
+  renderEpGroups();
+}
+
+function toggleExpandSuggestions(podKey){
+  expandedSuggestions[podKey] = !expandedSuggestions[podKey];
+  renderEpGroups();
+}
+
+// Silent auto-check on load, once per session
+let autoChecked = false;
+async function autoCheckFeeds(){
+  if (autoChecked || !workerUrl) return;
+  autoChecked = true;
+  const podKeys = Object.keys(PODCASTS).filter(k => PODCASTS[k].appleId || PODCASTS[k].rssUrl);
+  for (const k of podKeys) await checkNewEpisodes(k).catch(()=>{});
+}
+
+/* ════════════════════════════════════════════════════════
+   9. GENERATE + RENDER BREAKDOWNS
+   Save buttons reference items by (epId, sectionKey, index)
+   and look the text up from `summaries` — no text is ever
+   embedded in onclick attributes.
+   ════════════════════════════════════════════════════════ */
+async function generate(prefix){
+  const id = prefix === "home" ? homeId : curId;
+  const ep = episodes.find(e => e.id === id);
+  if (!ep) return;
+  if (summaries[id]) { renderBreakdown(prefix, summaries[id], ep); return; }
+
+  const btn = document.getElementById(prefix + "-gen-btn");
+  const err = document.getElementById(prefix + "-error");
+  err.innerHTML = "";
+  btn.disabled = true;
+  btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border:1.5px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block"></span> Generating…</span>';
+  try {
+    const d = await callAI(ep);
+    summaries[id] = d;
+    saveSummaries();
+    renderBreakdown(prefix, d, ep);
+    renderEpGroups();
+    renderHomeRows();
+    scheduleSave();
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-sparkles"></i> Generate breakdown';
+    err.innerHTML = '<div class="gen-error"><i class="ti ti-alert-circle"></i> ' + esc(e.message) + '</div>';
+  }
+}
+
+// Pullquotes get stable indices: pq0, pq1, … in order of appearance.
+function extractPullquotes(articleText){
+  return (articleText || "").split(/\n+/)
+    .map(l => l.trim())
+    .filter(l => l.startsWith("> "))
+    .map(l => l.slice(2));
+}
+
+// Resolve an item's text from the summary data by reference.
+function getItemText(epId, secKey, idx){
+  const d = summaries[epId];
+  if (!d) return null;
+  if (secKey === "five_min_read") {
+    const n = parseInt(String(idx).replace("pq",""), 10);
+    return extractPullquotes(d.five_min_read)[n] ?? null;
+  }
+  const v = d[secKey];
+  if (Array.isArray(v)) return v[idx] ?? null;
+  return v ?? null;   // text sections use idx 0
+}
+
+function saveBtnHtml(epId, secKey, idx){
+  const itemId = `${epId}::${secKey}::${idx}`;
+  const saved = col.some(c => c.itemId === itemId);
+  const idxArg = typeof idx === "number" ? idx : `'${idx}'`;
+  return `<button class="save-btn ${saved?'on':''}" onclick="saveItem('${escAttr(epId)}','${secKey}',${idxArg})" title="${saved?'Remove from collection':'Save to collection'}"><i class="ti ${saved?'ti-check':'ti-plus'}"></i></button>`;
+}
+
+function renderBreakdown(prefix, d, ep){
+  document.getElementById(prefix + "-cta").style.display = "none";
+  const r = document.getElementById(prefix + "-result");
+  r.style.display = "block";
+
+  const sections = getTypeDef(ep).sections;
+
+  // Tabs
+  let html = '<div class="breakdown-tabs">';
+  html += `<button class="bd-tab active" onclick="switchBdTab(this,'${prefix}-pane-quick')">Breakdown</button>`;
+  if (d.five_min_read) html += `<button class="bd-tab" onclick="switchBdTab(this,'${prefix}-pane-read')"><i class="ti ti-book" style="font-size:13px"></i> 5-min read</button>`;
+  html += '</div>';
+
+  // Quick breakdown pane
+  html += `<div class="bd-pane visible" id="${prefix}-pane-quick"><div class="bd-sections">`;
+  sections.forEach(sec => {
+    const v = d[sec.key];
+    if (!v || (Array.isArray(v) && !v.length)) return;
+    html += `<div class="bd-sec ${sec.cls}"><div class="bd-head"><div class="bd-icon ${sec.icls}"><i class="ti ${sec.icon}"></i></div><h3>${sec.title}</h3></div>`;
+
+    if (sec.type === "text") {
+      html += `<div class="bd-row"><p class="bd-text">${esc(v)}</p>${saveBtnHtml(ep.id, sec.key, 0)}</div>`;
+
+    } else if (sec.type === "list") {
+      html += '<ul class="bd-list">';
+      v.forEach((item, i) => {
+        html += `<li class="bd-item"><span class="bd-num">${i+1}.</span><span class="bd-item-text">${esc(item)}</span>${saveBtnHtml(ep.id, sec.key, i)}</li>`;
+      });
+      html += '</ul>';
+
+    } else if (sec.type === "quotes") {
+      html += '<ul class="bd-list">';
+      v.forEach((item, i) => {
+        html += `<li class="bd-item"><div class="quote-block">${esc(item)}</div>${saveBtnHtml(ep.id, sec.key, i)}</li>`;
+      });
+      html += '</ul>';
+
+    } else if (sec.type === "stories") {
+      v.forEach((story, i) => {
+        const bookmarked = newsItems.some(n => n.itemId === `${ep.id}::news::${i}`);
+        html += `<div class="story-card"><div class="bd-row"><div style="flex:1">
+          <div class="story-headline">${esc(story.headline || "")}</div>
+          ${story.why_matters ? `<div class="story-why"><b>Why it matters:</b> ${esc(story.why_matters)}</div>` : ""}
+          ${story.what_watch ? `<div class="story-watch"><b>Watch:</b> ${esc(story.what_watch)}</div>` : ""}
+        </div>
+        <button class="save-btn ${bookmarked?'on':''}" onclick="toggleNewsBookmark('${escAttr(ep.id)}',${i})" title="${bookmarked?'Remove bookmark':'Bookmark to News Digest'}"><i class="ti ${bookmarked?'ti-bookmark-filled':'ti-bookmark'}"></i></button>
+        </div></div>`;
+      });
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+  if (d.tags?.length) html += '<div class="tags">' + d.tags.map(t => `<span class="tag">${esc(t)}</span>`).join("") + '</div>';
+  html += '</div>';
+
+  // 5-min read pane
+  if (d.five_min_read) {
+    html += `<div class="bd-pane" id="${prefix}-pane-read"><div class="read-article">${renderArticle(d.five_min_read, ep)}</div></div>`;
+  }
+
+  r.innerHTML = html;
+  document.getElementById(prefix + "-action-row").style.display = "flex";
+  updateFavBtn(prefix, ep.id);
+}
+
+function switchBdTab(btn, paneId){
+  const container = btn.closest(".breakdown-tabs").parentElement;
+  container.querySelectorAll(".bd-tab").forEach(b => b.classList.remove("active"));
+  container.querySelectorAll(".bd-pane").forEach(p => p.classList.remove("visible"));
+  btn.classList.add("active");
+  document.getElementById(paneId)?.classList.add("visible");
+}
+
+function renderArticle(text, ep){
+  let html = "", pqIndex = 0;
+  text.split(/\n+/).forEach(line => {
+    line = line.trim();
+    if (!line) return;
+    if (line.startsWith("## ")) {
+      html += `<h4>${esc(line.slice(3))}</h4>`;
+    } else if (line.startsWith("> ")) {
+      html += `<div class="bd-row"><div class="pullquote">${esc(line.slice(2))}</div>${saveBtnHtml(ep.id, "five_min_read", "pq" + pqIndex)}</div>`;
+      pqIndex++;
+    } else {
+      html += `<p>${esc(line)}</p>`;
+    }
+  });
+  return html;
+}
+
+function resetPanel(prefix){
+  document.getElementById(prefix + "-cta").style.display = "block";
+  const r = document.getElementById(prefix + "-result");
+  r.style.display = "none"; r.innerHTML = "";
+  document.getElementById(prefix + "-error").innerHTML = "";
+  const btn = document.getElementById(prefix + "-gen-btn");
+  btn.disabled = false;
+  btn.innerHTML = '<i class="ti ti-sparkles"></i> Generate breakdown';
+  if (prefix === "home") document.getElementById("home-action-row").style.display = "none";
+}
+
+// Re-render whichever open views show this episode (keeps save buttons in sync)
+function refreshOpenBreakdowns(epId){
+  const ep = episodes.find(e => e.id === epId);
+  if (!ep || !summaries[epId]) return;
+  if (homeId === epId) renderBreakdown("home", summaries[epId], ep);
+  if (curId === epId)  renderBreakdown("panel", summaries[epId], ep);
+}
+
+/* ════════════════════════════════════════════════════════
+   10. HOME TAB
+   ════════════════════════════════════════════════════════ */
+function loadRandom(){
+  if (!episodes.length) return;
+  const ep = episodes[Math.floor(Math.random()*episodes.length)];
+  homeId = ep.id;
+  document.getElementById("home-title").textContent = ep.title;
+  document.getElementById("home-guest").textContent = ep.guest || "";
+  document.getElementById("home-date").textContent = ep.date || "";
+  const heroEl = document.getElementById("hero-thumb");
+  if (heroEl) heroEl.outerHTML = thumbHtml(ep.podcast, "lg", "hero-thumb");
+  resetPanel("home");
+  const lb = document.getElementById("home-listen-btn");
+  lb.style.display = ep.link ? "inline-flex" : "none";
+  if (ep.link) lb.href = ep.link;
+  if (summaries[ep.id]) renderBreakdown("home", summaries[ep.id], ep);
+  updateFavBtn("home", ep.id);
+  renderHomeRows();
+}
+
+function miniCard(ep){
+  const p = getPodcast(ep.podcast);
+  return `<div class="card mini-card" onclick="openEpFromHome('${escAttr(ep.id)}')">
+    <div class="mc-thumb-row">${thumbHtml(ep.podcast, "sm")}<span class="mc-pod-name">${esc(p.name)}</span></div>
+    <div class="mc-title">${esc(ep.title)}</div>
+    <div class="mc-guest">${esc(ep.guest || "")}</div>
+    ${summaries[ep.id] ? '<span class="mc-badge"><i class="ti ti-check"></i> Ready</span>' : ''}
+  </div>`;
+}
+
+function renderHomeRows(){
+  const recent = episodes.filter(e => summaries[e.id]).slice(0,10);
+  const rs = document.getElementById("home-recent-section");
+  rs.style.display = recent.length ? "block" : "none";
+  if (recent.length) document.getElementById("home-recent").innerHTML = recent.map(miniCard).join("");
+
+  const favEps = episodes.filter(e => favs.has(e.id));
+  const fs = document.getElementById("home-favs-section");
+  fs.style.display = favEps.length ? "block" : "none";
+  if (favEps.length) document.getElementById("home-favs").innerHTML = favEps.map(miniCard).join("");
+}
+
+function openEpFromHome(id){ showTab("browse"); openEp(id); }
+
+/* ════════════════════════════════════════════════════════
+   11. EPISODES TAB — search, groups, panel
+   ════════════════════════════════════════════════════════ */
+function filterEps(){
+  const q = document.getElementById("search-input").value.toLowerCase();
+  filtered = q ? episodes.filter(e => (e.title + e.guest + e.desc).toLowerCase().includes(q)) : [...episodes];
+  renderEpGroups();
+}
+
+
+function suggestionsHtml(podKey){
+  const suggestions = newEpSuggestions[podKey] || [];
+  if (!suggestions.length) return "";
+  const expanded = !!expandedSuggestions[podKey];
+  return `<div class="suggestions ${expanded ? "" : "collapsed"}">
+    <div class="suggestions-head" onclick="toggleExpandSuggestions('${escAttr(podKey)}')">
+      <i class="ti ti-sparkle"></i> ${suggestions.length} new episode${suggestions.length>1?"s":""} found
+      <span class="sug-toggle"><i class="ti ${expanded ? "ti-chevron-up" : "ti-chevron-down"}"></i> ${expanded ? "Hide" : "Show"}</span>
+    </div>
+    ${expanded ? suggestions.map((fe,i) => `
+      <div class="suggestion">
+        <div class="suggestion-info">
+          <div class="suggestion-title">${esc(fe.title)}</div>
+          ${fe.date ? `<div class="suggestion-date">${esc(fe.date)}</div>` : ""}
+        </div>
+        <button class="suggestion-add" onclick="event.stopPropagation();addSuggestedEp('${escAttr(podKey)}',${i})"><i class="ti ti-plus"></i> Add</button>
+        <button class="icon-btn" style="font-size:14px" onclick="event.stopPropagation();dismissSuggestion('${escAttr(podKey)}',${i})"><i class="ti ti-x"></i></button>
+      </div>`).join("") : ""}
+  </div>`;
+}
+
+function epItemHtml(ep){
+  if (selectMode) {
+    const done = !!summaries[ep.id];
+    const sel = selectedEps.has(ep.id);
+    return `<div class="ep-item ${done?'locked':''} ${sel?'selected':''}" onclick="${done?'':`toggleEpSelect('${escAttr(ep.id)}')`}">
+      <span class="ep-check"><i class="ti ti-check"></i></span>
+      <div class="ep-item-info">
+        ${ep.date ? `<div class="ep-date-sm">${esc(ep.date)}</div>` : ""}
+        <div class="ep-title-sm">${esc(ep.title)}</div>
+        ${done ? '<span class="ep-badge"><i class="ti ti-check"></i> Already generated</span>' : ""}
+      </div>
+    </div>`;
+  }
+  return `<div class="ep-item ${curId===ep.id?'active':''}" onclick="openEp('${escAttr(ep.id)}')">
+    <div class="ep-item-info">
+      ${ep.date ? `<div class="ep-date-sm">${esc(ep.date)}</div>` : ""}
+      <div class="ep-title-sm">${esc(ep.title)}</div>
+      ${ep.guest ? `<div class="ep-guest-sm">${esc(ep.guest)}</div>` : ""}
+      ${summaries[ep.id] ? '<span class="ep-badge"><i class="ti ti-check"></i> Breakdown ready</span>' : ""}
+    </div>
+    <button class="ep-fav ${favs.has(ep.id)?'on':''}" onclick="event.stopPropagation();toggleFavId('${escAttr(ep.id)}')">
+      <i class="ti ${favs.has(ep.id)?'ti-heart-filled':'ti-heart'}"></i>
+    </button>
+  </div>`;
+}
+
+// Podcasts in display order: defaults first, then alphabetical.
+function orderedPodKeys(){
+  const order = ["doac","huberman","hibt"];
+  const keys = Object.keys(PODCASTS);
+  return [
+    ...order.filter(k => keys.includes(k)),
+    ...keys.filter(k => !order.includes(k)).sort((a,b) => getPodcast(a).name.localeCompare(getPodcast(b).name))
+  ];
+}
+
+function setPodFilter(k){
+  podFilter = k;
+  if (selectMode) exitSelectMode();
+  renderEpGroups();
+}
+
+function renderPodRail(){
+  const el = document.getElementById("pod-rail");
+  if (!el) return;
+  const chips = orderedPodKeys().map(k => {
+    const n = episodes.filter(e => e.podcast === k).length;
+    return `<button class="pod-chip ${podFilter===k?'on':''}" onclick="setPodFilter('${escAttr(k)}')">
+      ${thumbHtml(k, "xs")}<span>${esc(getPodcast(k).name)}</span><span class="pc-ct">${n}</span>
+    </button>`;
+  }).join("");
+  el.innerHTML = `<button class="pod-chip pc-all ${podFilter==='all'?'on':''}" onclick="setPodFilter('all')">All<span class="pc-ct">${episodes.length}</span></button>`
+    + chips
+    + `<button class="pod-chip pc-add" onclick="showAddPodcastModal()" title="Add a podcast"><i class="ti ti-plus"></i></button>`;
+}
+
+function podHeroHtml(k, eps){
+  const p = getPodcast(k);
+  const hasFeed = !!(p.appleId || p.rssUrl);
+  const podType = getPodType(k);
+  const doneCt = eps.filter(e => summaries[e.id]).length;
+  return `<div class="pod-hero">
+    <div class="pod-hero-top">
+      ${thumbHtml(k, "md")}
+      <div class="pod-hero-info">
+        <h2>${esc(p.name)}</h2>
+        <div class="pod-hero-stats">${eps.length} episode${eps.length!==1?"s":""} · ${doneCt} with breakdowns</div>
+      </div>
+      <span class="pod-type-badge">${PODCAST_TYPES[podType]?.label || podType}</span>
+    </div>
+    <div class="pod-hero-actions">
+      ${hasFeed
+        ? `<button class="btn btn-sm" onclick="checkNewEpisodes('${escAttr(k)}')"><i class="ti ti-refresh"></i> Check feed</button>
+           <button class="btn btn-sm" onclick="openCatalogue('${escAttr(k)}')"><i class="ti ti-archive"></i> Catalogue</button>`
+        : `<button class="btn btn-sm" onclick="showRssPrompt('${escAttr(k)}')"><i class="ti ti-rss"></i> Add feed</button>`}
+      ${eps.some(e => !summaries[e.id])
+        ? `<button class="btn btn-sm" onclick="enterSelectMode()"><i class="ti ti-checkbox"></i> Select</button>` : ""}
+      <span class="check-status" id="check-status-${escAttr(k)}"></span>
+      <button class="icon-btn btn-ml" onclick="deletePodcast('${escAttr(k)}')" title="Remove podcast"><i class="ti ti-trash"></i></button>
+    </div>
+  </div>`;
+}
+
+function renderEpGroups(){
+  renderPodRail();
+  const el = document.getElementById("ep-groups");
+
+  // Single-podcast view — header card, suggestions, flat list
+  if (podFilter !== "all") {
+    if (!PODCASTS[podFilter]) { podFilter = "all"; renderPodRail(); }
+  }
+  if (podFilter !== "all") {
+    const eps = filtered.filter(e => (e.podcast || "doac") === podFilter);
+    const allEps = episodes.filter(e => (e.podcast || "doac") === podFilter);
+    const q = document.getElementById("search-input").value.trim();
+    el.innerHTML = podHeroHtml(podFilter, allEps)
+      + suggestionsHtml(podFilter)
+      + (eps.length
+          ? `<div class="episode-list">${eps.map(epItemHtml).join("")}</div>`
+          : `<div class="empty"><i class="ti ti-microphone"></i>${q ? "No episodes match your search." : "No episodes yet.<br>Check the feed or browse the catalogue to pull some in."}</div>`);
+    renderBulkBar();
+    return;
+  }
+
+  // All view — slim clickable groups
+  if (!filtered.length) {
+    el.innerHTML = '<div class="empty"><i class="ti ti-microphone"></i>No episodes yet. Tap <b>+ Add</b> above, or pick a podcast to browse its catalogue.</div>';
+    renderBulkBar();
+    return;
+  }
+  const groups = {};
+  filtered.forEach(ep => {
+    const k = ep.podcast || "doac";
+    (groups[k] = groups[k] || []).push(ep);
+  });
+  const keys = orderedPodKeys().filter(k => groups[k]);
+  const orphans = Object.keys(groups).filter(k => !keys.includes(k));   // episodes whose podcast was removed
+  el.innerHTML = [...keys, ...orphans].map(k => {
+    const p = getPodcast(k);
+    const eps = groups[k];
+    return `<div class="pod-group">
+      <div class="pod-group-header" onclick="setPodFilter('${escAttr(k)}')">
+        ${thumbHtml(k, "sm")}
+        <h3>${esc(p.name)}</h3>
+        <span class="pgh-ct">${eps.length}</span>
+        <span class="pgh-open">Open <i class="ti ti-chevron-right"></i></span>
+      </div>
+      ${suggestionsHtml(k)}
+      <div class="episode-list">${eps.map(epItemHtml).join("")}</div>
+    </div>`;
+  }).join("");
+  renderBulkBar();
+}
+
+function openEp(id){
+  const ep = episodes.find(e => e.id === id);
+  if (!ep) return;
+  curId = id;
+  renderEpGroups();
+  const panel = document.getElementById("panel");
+  panel.style.display = "block";
+  document.getElementById("panel-title").textContent = ep.title;
+  document.getElementById("panel-guest").textContent = ep.guest || "";
+  document.getElementById("panel-date").textContent = ep.date || "";
+  const thumbEl = document.getElementById("panel-thumb");
+  if (thumbEl) thumbEl.outerHTML = thumbHtml(ep.podcast, "md", "panel-thumb");
+  resetPanel("panel");
+  const lb = document.getElementById("panel-listen-btn");
+  lb.style.display = ep.link ? "inline-flex" : "none";
+  if (ep.link) lb.href = ep.link;
+  if (summaries[ep.id]) renderBreakdown("panel", summaries[ep.id], ep);
+  updateFavBtn("panel", ep.id);
+  panel.scrollIntoView({ behavior:"smooth", block:"nearest" });
+}
+
+let lastAddPod = null;   // remembers the last podcast picked in the add form
+function showAddEpModal(){
+  renderPodcastSelect();
+  const sel = document.getElementById("new-podcast");
+  if (podFilter !== "all" && PODCASTS[podFilter]) sel.value = podFilter;
+  else if (lastAddPod && PODCASTS[lastAddPod]) sel.value = lastAddPod;
+  document.getElementById("add-ep-modal").classList.add("open");
+  document.getElementById("new-title").focus();
+}
+function hideAddEpModal(){
+  document.getElementById("add-ep-modal").classList.remove("open");
+  ["new-title","new-link","new-desc"].forEach(id => document.getElementById(id).value = "");
+}
+
+function addEp(){
+  const t = document.getElementById("new-title").value.trim();
+  if (!t) { toast("Enter a title"); return; }
+  const gm = t.match(/^(.+?):/);
+  const podKey = document.getElementById("new-podcast").value;
+  if (!PODCASTS[podKey]) { toast("Pick a podcast first"); return; }
+  lastAddPod = podKey;
+  episodes.unshift({
+    id: "ep-" + Date.now(),
+    podcast: podKey,
+    title: t,
+    guest: gm ? gm[1].trim().slice(0,70) : "",
+    link: document.getElementById("new-link").value.trim(),
+    desc: document.getElementById("new-desc").value.trim(),
+    date: new Date().toLocaleDateString("en-GB",{ day:"numeric", month:"short", year:"numeric" })
+  });
+  saveEpisodes();
+  filtered = [...episodes];
+  renderEpGroups();
+  hideAddEpModal();
+  toast("Episode added");
+  scheduleSave();
+}
+
+function deleteEp(){
+  if (!curId || !confirm("Delete this episode and its breakdown?")) return;
+  episodes = episodes.filter(e => e.id !== curId);
+  delete summaries[curId];
+  favs.delete(curId);
+  saveEpisodes(); saveSummaries(); saveFavs();
+  filtered = [...episodes];
+  document.getElementById("panel").style.display = "none";
+  curId = null;
+  renderEpGroups(); renderHomeRows();
+  toast("Episode deleted");
+  scheduleSave();
+}
+
+/* ════════════════════════════════════════════════════════
+   11b. BULK GENERATE + FULL-FEED CATALOGUE
+   Select mode → queue (2 concurrent) → single Sheets push.
+   Catalogue pulls the podcast's entire RSS history on demand
+   (cached in memory for 10 min, never persisted).
+   ════════════════════════════════════════════════════════ */
+function enterSelectMode(){
+  selectMode = true;
+  selectedEps = new Set();
+  bulkResult = null;
+  renderEpGroups();
+}
+function exitSelectMode(rerender = true){
+  selectMode = false;
+  selectedEps = new Set();
+  if (rerender) renderEpGroups();
+}
+function toggleEpSelect(id){
+  if (selectedEps.has(id)) selectedEps.delete(id);
+  else {
+    if (selectedEps.size >= BULK_CAP) { toast(`Up to ${BULK_CAP} per run — generate these first, then select more`); return; }
+    selectedEps.add(id);
+  }
+  renderEpGroups();
+}
+function selectAllVisible(){
+  const pool = (podFilter === "all" ? filtered : filtered.filter(e => (e.podcast||"doac") === podFilter))
+    .filter(e => !summaries[e.id]);
+  for (const ep of pool) {
+    if (selectedEps.size >= BULK_CAP) { toast(`Selection capped at ${BULK_CAP} per run`); break; }
+    selectedEps.add(ep.id);
+  }
+  renderEpGroups();
+}
+
+function renderBulkBar(){
+  const bar = document.getElementById("bulk-bar");
+  if (!bar) return;
+  const visible = currentTab === "browse" && (selectMode || bulk.active || bulkResult);
+  bar.classList.toggle("show", !!visible);
+  if (!visible) { bar.innerHTML = ""; return; }
+
+  if (bulk.active) {
+    const pct = bulk.total ? Math.round(bulk.done / bulk.total * 100) : 0;
+    const onNum = Math.min(bulk.done + 1, bulk.total);
+    bar.innerHTML = `<div class="bulk-bar-inner">
+      <div class="bulk-bar-row">
+        <div class="bulk-bar-msg"><i class="ti ti-loader-2" style="display:inline-block;animation:spin 0.8s linear infinite"></i> Episode ${onNum} of ${bulk.total}${bulk.done ? ` · ${bulk.done} done` : ""}${bulk.failed.length ? ` · ${bulk.failed.length} failed` : ""}
+          <div class="bulk-bar-sub">${bulk.current ? esc(bulk.current) + " · " : ""}takes ~30–60s per episode</div>
+        </div>
+        <button class="bulk-btn" onclick="cancelBulk()">Cancel</button>
+      </div>
+      <div class="bulk-progress"><div class="bulk-progress-fill" style="width:${Math.max(pct,4)}%"></div></div>
+    </div>`;
+    return;
+  }
+  if (bulkResult) {
+    const f = bulkResult.failed.length;
+    bar.innerHTML = `<div class="bulk-bar-inner"><div class="bulk-bar-row">
+      <div class="bulk-bar-msg">${bulkResult.ok} breakdown${bulkResult.ok!==1?"s":""} generated${f ? ` · ${f} failed` : ""}</div>
+      ${f ? `<button class="bulk-btn primary" onclick="retryBulkFailed()">Retry failed</button>` : ""}
+      <button class="bulk-btn" onclick="bulkResult=null;renderBulkBar()">Done</button>
+    </div></div>`;
+    return;
+  }
+  // Select mode
+  const n = selectedEps.size;
+  bar.innerHTML = `<div class="bulk-bar-inner"><div class="bulk-bar-row">
+    <div class="bulk-bar-msg">${n} selected${n ? ` · est. cost ≈$${(n*BULK_COST_PER_EP).toFixed(2)}` : ""}
+      <div class="bulk-bar-sub">Pick episodes to generate breakdowns for (max ${BULK_CAP} per run)</div>
+    </div>
+    <button class="bulk-btn" onclick="selectAllVisible()">Select all</button>
+    <button class="bulk-btn primary" onclick="startBulkGenerate()" ${n?"":"disabled"}>Generate ${n||""}</button>
+    <button class="bulk-btn" onclick="exitSelectMode()">Cancel</button>
+  </div></div>`;
+}
+
+function startBulkGenerate(){
+  const ids = [...selectedEps];
+  if (!ids.length) return;
+  exitSelectMode(false);
+  runBulkQueue(ids);
+}
+function cancelBulk(){ bulk.cancelled = true; toast("Finishing the episodes already in flight…"); }
+function retryBulkFailed(){
+  const ids = bulkResult ? [...bulkResult.failed] : [];
+  bulkResult = null;
+  if (ids.length) runBulkQueue(ids);
+}
+
+async function runBulkQueue(ids){
+  bulk = { active:true, total:ids.length, done:0, failed:[], cancelled:false, current:"" };
+  bulkResult = null;
+  renderEpGroups();   // exits checkbox view, shows progress bar
+
+  const queue = [...ids];
+  let ok = 0;
+  const worker = async () => {
+    while (queue.length && !bulk.cancelled) {
+      const id = queue.shift();
+      const ep = episodes.find(e => e.id === id);
+      if (!ep || summaries[id]) { bulk.done++; if (ep) ok++; renderBulkBar(); continue; }
+      bulk.current = ep.title;
+      renderBulkBar();
+      try {
+        const d = await callAI(ep);
+        summaries[id] = d;
+        saveSummaries();
+        ok++;
+      } catch(e) {
+        bulk.failed.push(id);
+      }
+      bulk.done++;
+      renderBulkBar();
+    }
+  };
+  // Two workers, second staggered so the first API hits aren't simultaneous
+  const workers = [worker()];
+  if (ids.length > 1) workers.push((async () => { await new Promise(r => setTimeout(r, 900)); await worker(); })());
+  await Promise.all(workers);
+
+  const failed = [...bulk.failed];
+  bulk = { active:false, total:0, done:0, failed:[], cancelled:false, current:"" };
+  bulkResult = { ok, failed };
+  renderEpGroups(); renderHomeRows();
+  scheduleSave();   // one batched Sheets push for the whole run
+  toast(failed.length ? `Done — ${ok} generated, ${failed.length} failed` : `${ok} breakdown${ok!==1?"s":""} generated`);
+}
+
+// ── Catalogue: browse the full feed history
+async function getFullFeed(podKey){
+  const cached = feedCache[podKey];
+  if (cached && Date.now() - cached.fetchedAt < 10*60*1000) return cached.items;
+  const pod = getPodcast(podKey);
+  const feedUrl = pod.rssUrl || await getRssFeedUrl(pod.appleId);
+  const items = parseRssFeed(await proxyFetch(feedUrl));   // no limit — everything
+  feedCache[podKey] = { items, fetchedAt: Date.now() };
+  return items;
+}
+
+async function openCatalogue(podKey){
+  const pod = getPodcast(podKey);
+  catState = { podKey, items:[], selected:new Set(), q:"" };
+  document.getElementById("cat-title").textContent = pod.name + " — catalogue";
+  document.getElementById("cat-search").value = "";
+  document.getElementById("cat-list").innerHTML = '<div class="cat-loading"><i class="ti ti-loader-2" style="display:inline-block;animation:spin 0.8s linear infinite"></i>&nbsp; Fetching the full feed…</div>';
+  document.getElementById("cat-sub").textContent = "Every episode from the feed that isn't in your list yet.";
+  document.getElementById("catalogue-modal").classList.add("open");
+  renderCatFooter();
+  try {
+    const all = await getFullFeed(podKey);
+    const existing = new Set(episodes.filter(e => e.podcast === podKey).map(e => e.title.toLowerCase().trim()));
+    catState.items = all.filter(fe => !existing.has(fe.title.toLowerCase().trim()));
+    document.getElementById("cat-sub").textContent =
+      `${all.length} episodes in the feed · ${catState.items.length} not in your list yet.`;
+    renderCatList();
+  } catch(e) {
+    document.getElementById("cat-list").innerHTML = `<div class="cat-loading">Couldn't fetch the feed — ${esc(e.message.slice(0,80))}</div>`;
+  }
+}
+function hideCatalogue(){ document.getElementById("catalogue-modal").classList.remove("open"); }
+
+function filterCatalogue(q){ catState.q = q.toLowerCase(); renderCatList(); }
+
+function catVisibleItems(){
+  return catState.q
+    ? catState.items.filter((fe) => (fe.title + " " + fe.guest).toLowerCase().includes(catState.q))
+    : catState.items;
+}
+
+function renderCatList(){
+  const el = document.getElementById("cat-list");
+  const visible = catVisibleItems();
+  if (!visible.length) {
+    el.innerHTML = `<div class="cat-loading">${catState.q ? "Nothing matches your search." : "Everything from this feed is already in your list."}</div>`;
+  } else {
+    el.innerHTML = visible.map(fe => {
+      const i = catState.items.indexOf(fe);
+      const sel = catState.selected.has(i);
+      return `<div class="cat-item ${sel?'selected':''}" onclick="toggleCatItem(${i})">
+        <span class="ep-check ${''}" style="${sel?'background:var(--accent);border-color:var(--accent);color:#fff':''}"><i class="ti ti-check"></i></span>
+        <div class="cat-item-info">
+          <div class="cat-item-title">${esc(fe.title)}</div>
+          ${fe.date ? `<div class="cat-item-date">${esc(fe.date)}</div>` : ""}
+        </div>
+      </div>`;
+    }).join("");
+  }
+  renderCatFooter();
+}
+function toggleCatItem(i){
+  if (catState.selected.has(i)) catState.selected.delete(i);
+  else catState.selected.add(i);
+  renderCatList();
+}
+function renderCatFooter(){
+  const n = catState.selected.size;
+  const addBtn = document.getElementById("cat-add-btn");
+  const genBtn = document.getElementById("cat-gen-btn");
+  addBtn.disabled = !n;
+  genBtn.disabled = !n || n > BULK_CAP;
+  addBtn.innerHTML = `<i class="ti ti-plus"></i> Add${n ? " " + n : ""}`;
+  genBtn.innerHTML = `<i class="ti ti-sparkles"></i> Add &amp; generate${n ? " " + n : ""}`;
+  document.getElementById("cat-count").textContent =
+    n > BULK_CAP ? `Generate is capped at ${BULK_CAP} — add only, or select fewer`
+    : n ? `≈$${(n*BULK_COST_PER_EP).toFixed(2)} to generate` : "";
+}
+
+function catalogueAdd(generate){
+  const podKey = catState.podKey;
+  const picked = [...catState.selected].sort((a,b) => a-b).map(i => catState.items[i]).filter(Boolean);
+  if (!picked.length) return;
+  if (generate && picked.length > BULK_CAP) { toast(`Generate is capped at ${BULK_CAP} per run`); return; }
+  const now = Date.now();
+  const newEps = picked.map((fe, i) => ({
+    id: "ep-" + now + "-c" + i,
+    podcast: podKey,
+    title: fe.title, guest: fe.guest, link: fe.link, desc: fe.desc, date: fe.date
+  }));
+  episodes = [...newEps, ...episodes];
+  saveEpisodes();
+  // Remove any matching pending suggestions so they don't show twice
+  const addedTitles = new Set(picked.map(fe => fe.title.toLowerCase().trim()));
+  if (newEpSuggestions[podKey]) {
+    newEpSuggestions[podKey] = newEpSuggestions[podKey].filter(fe => !addedTitles.has(fe.title.toLowerCase().trim()));
+    saveNewEps();
+  }
+  delete feedCache[podKey];   // stale now
+  filtered = [...episodes];
+  hideCatalogue();
+  podFilter = podKey;
+  renderEpGroups();
+  scheduleSave();
+  if (generate) runBulkQueue(newEps.map(e => e.id));
+  else toast(`${newEps.length} episode${newEps.length>1?"s":""} added`);
+}
+
+/* ════════════════════════════════════════════════════════
+   12. FAVOURITES
+   ════════════════════════════════════════════════════════ */
+function updateFavBtn(prefix, id){
+  const on = favs.has(id);
+  document.getElementById(prefix + "-fav-btn").classList.toggle("on", on);
+  document.getElementById(prefix + "-fav-icon").className = "ti " + (on ? "ti-heart-filled" : "ti-heart");
+  document.getElementById(prefix + "-fav-label").textContent = on ? "Saved" : "Save";
+}
+function toggleFav(prefix){ toggleFavId(prefix === "home" ? homeId : curId); }
+function toggleFavId(id){
+  if (!id) return;
+  favs.has(id) ? favs.delete(id) : favs.add(id);
+  saveFavs();
+  renderEpGroups(); renderHomeRows();
+  if (homeId) updateFavBtn("home", homeId);
+  if (curId)  updateFavBtn("panel", curId);
+  toast(favs.has(id) ? "Episode saved" : "Removed from saved");
+}
+
+/* ════════════════════════════════════════════════════════
+   13. SAVE-ITEM ROUTING
+   Collection is the master list. Non-news items also go to
+   Playbook (with async AI enrichment). News stories go to
+   News Digest via the bookmark button — never to Playbook.
+   Removing removes everywhere.
+   ════════════════════════════════════════════════════════ */
+function saveItem(epId, secKey, idx){
+  const itemId = `${epId}::${secKey}::${idx}`;
+  const existing = col.findIndex(c => c.itemId === itemId);
+  const ep = episodes.find(e => e.id === epId);
+
+  if (existing >= 0) {
+    col.splice(existing, 1);
+    pbItems = pbItems.filter(p => p.itemId !== itemId);
+    savePb();
+    renderPlaybook(); renderWeeklyFocus();
+    toast("Removed");
+  } else {
+    const text = getItemText(epId, secKey, idx);
+    if (text == null) { toast("Couldn't find that item — try regenerating the breakdown"); return; }
+    const colItem = {
+      itemId, type:secKey, typeLabel:sectionMeta(secKey).title,
+      text, sourceTitle: ep?.title || "Unknown", sourceEpId: epId
+    };
+    col.unshift(colItem);
+
+    if (isNewsEpisode(epId)) {
+      toast("Saved to collection");
+    } else if (!pbItems.some(p => p.itemId === itemId)) {
+      pbItems.unshift({ ...colItem, area:"other", action:"", status:"todo", addedAt:new Date().toISOString() });
+      savePb();
+      renderPlaybook(); renderWeeklyFocus();
+      toast("Saving to Playbook…");
+      enrichAndSaveToPlaybook(colItem);
+    }
+  }
+
+  saveCol();
+  refreshOpenBreakdowns(epId);
+  renderColList();
+  scheduleSave();
+}
+
+function removeColItem(itemId){
+  col = col.filter(c => c.itemId !== itemId);
+  saveCol();
+  refreshOpenBreakdowns(itemId.split("::")[0]);
+  renderColList();
+  scheduleSave();
+}
+
+/* ════════════════════════════════════════════════════════
+   14. COLLECTION TAB
+   ════════════════════════════════════════════════════════ */
+function setFilter(f){ colFilter = f; renderColList(); }
+
+function renderPills(){
+  const counts = {};
+  col.forEach(c => counts[c.type] = (counts[c.type] || 0) + 1);
+  const usedKeys = [...new Set(col.map(c => c.type))];
+  let h = `<button class="pill ${colFilter==="all"?"on":""}" onclick="setFilter('all')">All <span class="ct">${col.length}</span></button>`;
+  usedKeys.forEach(key => {
+    const m = sectionMeta(key);
+    h += `<button class="pill ${colFilter===key?"on":""}" onclick="setFilter('${key}')"><i class="ti ${m.icon}"></i> ${esc(m.title)} <span class="ct">${counts[key]}</span></button>`;
+  });
+  document.getElementById("pills").innerHTML = h;
+}
+
+function renderColList(){
+  renderPills();
+  const el = document.getElementById("col-list");
+  const items = colFilter === "all" ? col : col.filter(c => c.type === colFilter);
+  if (!items.length) {
+    el.innerHTML = '<div class="empty"><i class="ti ti-bookmark"></i>Nothing saved yet.<br>Generate a breakdown and tap + on any item.</div>';
+    return;
+  }
+  el.innerHTML = items.map(item => {
+    const m = sectionMeta(item.type);
+    const text = item.type === "best_quotes" ? `"${esc(item.text)}"` : esc(item.text);
+    return `<div class="card col-item">
+      <div class="col-item-body">
+        <div class="col-type"><i class="ti ${m.icon}"></i> ${esc(item.typeLabel)}</div>
+        <div class="col-text">${text}</div>
+        <div class="col-src"><i class="ti ti-microphone"></i> ${esc(item.sourceTitle)}</div>
+      </div>
+      <button class="icon-btn" onclick="removeColItem('${escAttr(item.itemId)}')"><i class="ti ti-x"></i></button>
+    </div>`;
+  }).join("");
+}
+
+/* ════════════════════════════════════════════════════════
+   15. PLAYBOOK — enrichment, statuses, weekly focus
+   ════════════════════════════════════════════════════════ */
+async function enrichAndSaveToPlaybook(colItem){
+  if (!workerUrl) {
+    updatePbItem(colItem.itemId, "other", "No action generated — Worker URL not set.");
+    return;
+  }
+  try {
+    const prompt = `You are helping someone turn a podcast insight into a life action.
+
+Insight: "${colItem.text}"
+From podcast episode: "${colItem.sourceTitle}"
+
+1. Pick ONE life area from: health, mindset, money, relationships, habits, creativity, other
+2. Write ONE specific, concrete personal action commitment (1-2 sentences, starts with "This week," or "Starting today," — something they can actually do, not generic advice)
+
+Return ONLY valid JSON: {"area":"habits","action":"Starting today, I will set a 5-minute timer each morning to review my top priority before opening my phone."}`;
+    const r = await aiRequest(prompt, 300);
+    const parsed = extractJson(r.text);
+    updatePbItem(colItem.itemId, parsed.area || "other", parsed.action || "");
+  } catch(e) {
+    updatePbItem(colItem.itemId, "other", "Couldn't generate action — try again later.");
+  }
+}
+
+function updatePbItem(itemId, area, action){
+  const item = pbItems.find(p => p.itemId === itemId);
+  if (!item) return;
+  item.area = LIFE_AREAS[area] ? area : "other";
+  item.action = action;
+  savePb();
+  renderPlaybook(); renderWeeklyFocus();
+  toast("Playbook updated ✦");
+  scheduleSave();
+}
+
+function removeFromPlaybook(itemId){
+  pbItems = pbItems.filter(p => p.itemId !== itemId);
+  savePb();
+  col = col.filter(c => c.itemId !== itemId);
+  saveCol();
+  renderPlaybook(); renderWeeklyFocus(); renderColList();
+  refreshOpenBreakdowns(itemId.split("::")[0]);
+  toast("Removed from Playbook");
+  scheduleSave();
+}
+
+function setStatus(itemId, status){
+  const item = pbItems.find(p => p.itemId === itemId);
+  if (item) { item.status = status; savePb(); renderPlaybook(); scheduleSave(); }
+}
+
+function setPbFilter(f){ pbFilter = f; renderPlaybook(); }
+
+function renderPlaybookPills(){
+  const counts = {};
+  pbItems.forEach(p => { counts[p.area] = (counts[p.area] || 0) + 1; });
+  let h = `<button class="pill ${pbFilter==="all"?"on":""}" onclick="setPbFilter('all')">All <span class="ct">${pbItems.length}</span></button>`;
+  Object.keys(LIFE_AREAS).filter(k => counts[k]).forEach(k => {
+    const a = LIFE_AREAS[k];
+    h += `<button class="pill ${pbFilter===k?"on":""}" onclick="setPbFilter('${k}')"><i class="ti ${a.icon}"></i> ${a.label} <span class="ct">${counts[k]}</span></button>`;
+  });
+  document.getElementById("playbook-pills").innerHTML = h;
+}
+
+function renderPlaybook(){
+  renderPlaybookPills();
+  const el = document.getElementById("playbook-list");
+  const items = pbFilter === "all" ? pbItems : pbItems.filter(p => p.area === pbFilter);
+  if (!items.length) {
+    el.innerHTML = `<div class="empty"><i class="ti ti-plant-2"></i>${pbItems.length
+      ? "No items in this area yet."
+      : "Nothing in your Playbook yet.<br>Save any insight from a breakdown and it'll appear here with an action commitment."}</div>`;
+    return;
+  }
+  el.innerHTML = items.map(item => {
+    const area = LIFE_AREAS[item.area] || LIFE_AREAS.other;
+    const statusBtns = STATUSES.map(s =>
+      `<button class="status-btn ${item.status===s.key?'active-'+s.key:''}" onclick="setStatus('${escAttr(item.itemId)}','${s.key}')">${s.label}</button>`
+    ).join("");
+    const actionHtml = item.action
+      ? `<div class="pb-action-label"><i class="ti ti-arrow-right"></i> Your action</div><div class="pb-action">${esc(item.action)}</div>`
+      : `<div class="pb-action loading">Generating your action commitment…</div>`;
+    return `<div class="card pb-card">
+      <div class="pb-area-tag ${area.colorCls}"><i class="ti ${area.icon}"></i> ${area.label}</div>
+      <div class="pb-insight">${esc(item.text)}</div>
+      ${actionHtml}
+      <div class="pb-footer">
+        <div class="pb-source"><i class="ti ti-microphone"></i> ${esc(item.sourceTitle || "")}</div>
+        <button class="icon-btn" style="font-size:13px" onclick="removeFromPlaybook('${escAttr(item.itemId)}')" title="Remove"><i class="ti ti-x"></i></button>
+      </div>
+      <div class="status-btns">${statusBtns}</div>
+    </div>`;
+  }).join("");
+}
+
+// ── Weekly focus — one random not-done item per life area
+function refreshWeeklyFocus(){
+  const focus = {};
+  Object.keys(LIFE_AREAS).forEach(area => {
+    const candidates = pbItems.filter(p => p.area === area && p.status !== "done");
+    if (candidates.length) focus[area] = candidates[Math.floor(Math.random()*candidates.length)];
+  });
+  weeklyFocus = { items:focus, refreshedAt:Date.now() };
+  save("doac-weekly-focus-v1", weeklyFocus);
+}
+
+function manualRefreshWeeklyFocus(){
+  refreshWeeklyFocus();
+  renderWeeklyFocus();
+  toast("Weekly focus refreshed");
+}
+
+function renderWeeklyFocus(){
+  // Auto-refresh if stale (>7 days) or empty
+  const stale = Date.now() - (weeklyFocus.refreshedAt || 0) > 7*24*60*60*1000;
+  const isEmpty = !weeklyFocus.items || !Object.keys(weeklyFocus.items).length;
+  if (stale || isEmpty) refreshWeeklyFocus();
+
+  const section = document.getElementById("weekly-focus-section");
+  const items = Object.values(weeklyFocus.items || {}).filter(Boolean);
+  if (!items.length) { section.style.display = "none"; return; }
+  section.style.display = "block";
+  document.getElementById("weekly-focus-row").innerHTML = items.map(item => {
+    const area = LIFE_AREAS[item.area] || LIFE_AREAS.other;
+    return `<div class="focus-card">
+      <div class="fc-area ${area.colorCls}"><i class="ti ${area.icon}"></i> ${area.label}</div>
+      <div class="fc-text">${esc(item.text)}</div>
+      ${item.action ? `<div class="fc-action">→ ${esc(item.action)}</div>` : ""}
+    </div>`;
+  }).join("");
+}
+
+/* ════════════════════════════════════════════════════════
+   16. NEWS DIGEST
+   Stories are referenced by (epId, storyIdx) and looked up
+   from the summary — replaces the old _storyRegistry global.
+   ════════════════════════════════════════════════════════ */
+function toggleNewsBookmark(epId, storyIdx){
+  const itemId = `${epId}::news::${storyIdx}`;
+  const existing = newsItems.findIndex(n => n.itemId === itemId);
+
+  if (existing >= 0) {
+    newsItems.splice(existing, 1);
+    saveNews();
+    renderNewsDigest();
+    refreshOpenBreakdowns(epId);
+    toast("Story removed");
+    scheduleSave();
+    return;
+  }
+
+  const summary = summaries[epId];
+  const story = summary?.top_stories?.[storyIdx];
+  const ep = episodes.find(e => e.id === epId);
+  if (!story) { toast("Couldn't find that story — try regenerating the breakdown"); return; }
+
+  newsItems.unshift({
+    itemId, storyIdx,
+    headline: story.headline || "",
+    why: story.why_matters || "",
+    watch: story.what_watch || "",
+    tags: summary.tags || [],
+    sourceTitle: ep?.title || "Unknown",
+    sourceEpId: epId,
+    following: false,
+    savedAt: new Date().toISOString()
+  });
+  saveNews();
+  renderNewsDigest();
+  refreshOpenBreakdowns(epId);
+  toast("Story bookmarked");
+  scheduleSave();
+}
+
+function toggleFollowNews(itemId){
+  const item = newsItems.find(n => n.itemId === itemId);
+  if (!item) return;
+  item.following = !item.following;
+  saveNews();
+  renderNewsDigest();
+  scheduleSave();
+}
+
+function removeNewsItem(itemId){
+  newsItems = newsItems.filter(n => n.itemId !== itemId);
+  saveNews();
+  renderNewsDigest();
+  refreshOpenBreakdowns(itemId.split("::")[0]);
+  scheduleSave();
+}
+
+function setNdFilter(f){
+  ndFilter = f;
+  document.getElementById("nd-filter-all").style.fontWeight = f === "all" ? "700" : "500";
+  document.getElementById("nd-filter-follow").style.fontWeight = f === "follow" ? "700" : "500";
+  renderNewsDigest();
+}
+
+function renderNewsDigest(){
+  // Topic pills from all tags across bookmarked stories
+  const allTags = [...new Set(newsItems.flatMap(n => n.tags || []))];
+  document.getElementById("nd-topic-pills").innerHTML = allTags.map(t =>
+    `<button class="pill ${ndFilter===t?'on':''}" onclick="setNdFilter('${escAttr(t)}')">${esc(t)}</button>`
+  ).join("");
+
+  const el = document.getElementById("nd-list");
+  let items = [...newsItems];
+  if (ndFilter === "follow") items = items.filter(n => n.following);
+  else if (ndFilter !== "all") items = items.filter(n => (n.tags || []).includes(ndFilter));
+
+  if (!items.length) {
+    el.innerHTML = `<div class="empty"><i class="ti ti-news"></i>${newsItems.length
+      ? "No stories match this filter."
+      : "No bookmarked stories yet.<br>Generate a breakdown for a news episode and tap the bookmark icon on any story."}</div>`;
+    return;
+  }
+
+  // Group by source episode
+  const groups = {};
+  items.forEach(n => {
+    (groups[n.sourceEpId] = groups[n.sourceEpId] || { title:n.sourceTitle, items:[] }).items.push(n);
+  });
+
+  el.innerHTML = Object.values(groups).map(g => `
+    <div class="nd-topic-group">
+      <div class="nd-topic-head"><i class="ti ti-microphone"></i>${esc(g.title)}</div>
+      ${g.items.map(n => `
+        <div class="nd-card">
+          <div class="nd-card-head">
+            <div class="nd-card-body">
+              <div class="nd-headline">${esc(n.headline)}</div>
+              ${n.why ? `<div class="nd-why">${esc(n.why)}</div>` : ""}
+              ${n.watch ? `<div class="nd-watch"><i class="ti ti-eye"></i>${esc(n.watch)}</div>` : ""}
+            </div>
+            <button class="icon-btn" onclick="removeNewsItem('${escAttr(n.itemId)}')"><i class="ti ti-x"></i></button>
+          </div>
+          <div class="nd-meta">
+            ${(n.tags || []).map(t => `<span class="tag">${esc(t)}</span>`).join("")}
+            <button class="nd-follow-btn ${n.following?'active':''}" onclick="toggleFollowNews('${escAttr(n.itemId)}')">
+              <i class="ti ti-bell${n.following?'-ringing':''}"></i>${n.following ? "Following" : "Follow story"}
+            </button>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `).join("");
+}
+
+/* ════════════════════════════════════════════════════════
+   17. EXPORT / IMPORT — now covers all data, and reads old
+   exports (episodes/summaries/favs/col only) too.
+   ════════════════════════════════════════════════════════ */
+function exportData(){
+  const payload = {
+    version: 2,
+    episodes, summaries,
+    favs: [...favs],
+    col,
+    podcasts: PODCASTS,
+    pbItems, newsItems
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type:"application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "podcast-data-" + new Date().toISOString().slice(0,10) + ".json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast("Data exported");
+}
+
+function importData(e){
+  const file = e.target.files[0];
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    try {
+      const d = JSON.parse(ev.target.result);
+      if (!Array.isArray(d.episodes)) throw new Error("invalid");
+      episodes  = d.episodes;
+      summaries = d.summaries || {};
+      favs      = new Set(d.favs || []);
+      col       = d.col || [];
+      if (d.podcasts)  { PODCASTS = d.podcasts; Object.entries(DEFAULT_PODCASTS).forEach(([k,v]) => { if(!PODCASTS[k]) PODCASTS[k]=v; }); savePodcasts(); }
+      if (d.pbItems)   { pbItems = d.pbItems; savePb(); }
+      if (d.newsItems) { newsItems = d.newsItems; saveNews(); }
+      saveEpisodes(); saveSummaries(); saveFavs(); saveCol();
+      filtered = [...episodes];
+      renderPodcastSelect(); renderEpGroups(); renderHomeRows(); loadRandom();
+      renderColList(); renderPlaybook(); renderWeeklyFocus(); renderNewsDigest();
+      toast("Data imported");
+    } catch { toast("Couldn't read that file"); }
+  };
+  r.readAsText(file);
+  e.target.value = "";
+}
+
+/* ════════════════════════════════════════════════════════
+   18. GOOGLE AUTH + SHEETS SYNC
+   6 sheets: Podcasts, Episodes, Summaries, Playbook,
+   Collection, News Digest. Push replaces sheet contents;
+   Load pulls everything back (incl. podcasts + top stories).
+   ════════════════════════════════════════════════════════ */
+let gToken = null;
+let gClient = null;
+
+function initGoogle(){
+  if (!GOOGLE_CLIENT_ID) return;
+  gClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: "https://www.googleapis.com/auth/spreadsheets",
+    callback: (resp) => {
+      if (resp.error) { toast("Google sign-in failed: " + resp.error); return; }
+      gToken = resp.access_token;
+      updateSyncUI(true);
+      onConnected();
+    }
+  });
+}
+function signInGoogle(){
+  if (!GOOGLE_CLIENT_ID || !SHEET_ID) { toast("Fill in GOOGLE_CLIENT_ID and SHEET_ID in the HTML first"); return; }
+  gClient.requestAccessToken();
+}
+function signOutGoogle(){
+  if (gToken) google.accounts.oauth2.revoke(gToken, ()=>{});
+  gToken = null;
+  updateSyncUI(false);
+  toast("Signed out of Google");
+}
+function updateSyncUI(on){
+  document.getElementById("connect-banner").style.display = on ? "none" : (connectDismissed ? "none" : "flex");
+  document.getElementById("sync-signin-btn").style.display  = on ? "none"        : "inline-flex";
+  document.getElementById("sync-signout-btn").style.display = on ? "inline-flex" : "none";
+  document.getElementById("sync-now-btn").style.display     = on ? "inline-flex" : "none";
+  setSyncStatus(on ? "Connected to Google Sheets ✓" : "Not connected", on ? "var(--success-text)" : "var(--text-3)");
+}
+function setSyncStatus(text, color){
+  const s = document.getElementById("sync-status");
+  s.textContent = text;
+  s.style.color = color || "var(--text-3)";
+}
+
+async function sheetsReq(method, path, body){
+  if (!gToken || !workerUrl || !SHEET_ID) return null;
+  const sheetsUrl = "https://sheets.googleapis.com/v4/spreadsheets/" + SHEET_ID + path;
+  const res = await fetch(workerUrl + "/sheets", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token:gToken, method, sheetsUrl, body: body || undefined })
+  });
+  return res.json();
+}
+
+const SHEET_NAMES = ["Podcasts","Episodes","Summaries","Playbook","Collection","News Digest"];
+
+async function ensureSheets(){
+  const meta = await sheetsReq("GET", "", null);
+  if (!meta || meta.error) return false;
+  const existing = (meta.sheets || []).map(s => s.properties.title);
+  const needed = SHEET_NAMES.filter(n => !existing.includes(n));
+  if (needed.length) {
+    await sheetsReq("POST", ":batchUpdate", { requests: needed.map(title => ({ addSheet:{ properties:{ title } } })) });
+  }
+  return true;
+}
+async function writeSheet(name, rows){
+  if (!rows || !rows.length) return;
+  await sheetsReq("POST", "/values/" + encodeURIComponent(name) + "!A1:ZZ9999:clear", {});
+  await sheetsReq("PUT", "/values/" + encodeURIComponent(name) + "!A1?valueInputOption=RAW", { values: rows });
+}
+async function readSheet(name){
+  const res = await sheetsReq("GET", "/values/" + encodeURIComponent(name) + "!A:ZZ", null);
+  return (res && res.values) ? res.values : [];
+}
+
+let syncTimer = null;
+function scheduleSave(){ clearTimeout(syncTimer); syncTimer = setTimeout(syncAll, 2000); }
+
+// First sync after connecting: pull the sheet, merge into local
+// (nothing is ever dropped on either side), then push the union back.
+async function onConnected(){
+  await loadFromSheets(true);
+  await syncAll();
+}
+
+async function syncAll(){
+  if (!gToken || !SHEET_ID || !workerUrl) return;
+  setSyncStatus("Syncing…");
+  try {
+    if (!await ensureSheets()) { setSyncStatus("Sync failed — check Sheet ID", "var(--danger)"); return; }
+    await Promise.all([
+      pushPodcasts(), pushEpisodes(), pushSummaries(),
+      pushPlaybook(), pushCollection(), pushNewsDigest()
+    ]);
+    setSyncStatus("Synced · " + new Date().toLocaleTimeString(), "var(--success-text)");
+  } catch(e) { setSyncStatus("Sync error: " + e.message, "var(--danger)"); }
+}
+
+// Sheet 1: Podcasts
+async function pushPodcasts(){
+  const rows = [["Podcast Key","Name","Type","Type Label","Apple ID","Artwork URL","RSS URL"]];
+  Object.entries(PODCASTS).forEach(([key, p]) => {
+    const type = getPodType(key);
+    rows.push([key, p.name||"", type, PODCAST_TYPES[type]?.label||"", p.appleId||"", p.art||"", p.rssUrl||""]);
+  });
+  await writeSheet("Podcasts", rows);
+}
+
+// Sheet 2: Episodes
+async function pushEpisodes(){
+  const rows = [["Episode ID","Podcast","Podcast Type","Title","Guest","Date","Link","Has Breakdown","Show Notes"]];
+  episodes.forEach(e => {
+    const type = getPodType(e.podcast);
+    rows.push([
+      e.id, getPodcast(e.podcast).name || e.podcast,
+      PODCAST_TYPES[type]?.label || type,
+      e.title||"", e.guest||"", e.date||"", e.link||"",
+      summaries[e.id] ? "Yes" : "No",
+      e.desc||""
+    ]);
+  });
+  await writeSheet("Episodes", rows);
+}
+
+// Sheet 3: Summaries — one universal schema covers all four types.
+// News stories serialise as: headline | Why: … | Watch: …  ///  next story…
+const STORY_SEP = " /// ", FIELD_SEP = " | ";
+function serialiseStories(stories){
+  return (stories || []).map(st =>
+    [st.headline, st.why_matters ? "Why: "+st.why_matters : "", st.what_watch ? "Watch: "+st.what_watch : ""]
+      .filter(Boolean).join(FIELD_SEP)
+  ).join(STORY_SEP);
+}
+function parseStories(str){
+  if (!str) return [];
+  return str.split(STORY_SEP).filter(Boolean).map(chunk => {
+    const parts = chunk.split(FIELD_SEP);
+    const story = { headline: parts[0] || "" };
+    parts.slice(1).forEach(p => {
+      if (p.startsWith("Why: ")) story.why_matters = p.slice(5);
+      else if (p.startsWith("Watch: ")) story.what_watch = p.slice(7);
+    });
+    return story;
+  });
+}
+
+const SUMMARY_HEADER = [
+  "Episode ID","Episode Title","Podcast","Type","Tags",
+  "Summary","Key Ideas","Action Steps",                                 // interview
+  "Top Stories","Quick Context","What To Watch",                        // news
+  "Core Concept","The Science","Practical Protocol","Myths Debunked",   // education
+  "The Story","Key Decisions","Lessons Learned",                        // business
+  "Best Quotes","Recap","5-Min Read"                                    // universal
+];
+
+async function pushSummaries(){
+  const rows = [SUMMARY_HEADER];
+  Object.entries(summaries).forEach(([epId, s]) => {
+    const ep = episodes.find(e => e.id === epId);
+    const type = getPodType(ep?.podcast);
+    rows.push([
+      epId, ep?.title||"", getPodcast(ep?.podcast).name || ep?.podcast || "",
+      PODCAST_TYPES[type]?.label || type,
+      (s.tags||[]).join(", "),
+      s.executive_summary||"",
+      (s.key_ideas||[]).join(FIELD_SEP),
+      (s.action_steps||[]).join(FIELD_SEP),
+      serialiseStories(s.top_stories),
+      (s.quick_context||[]).join(FIELD_SEP),
+      (s.what_to_watch||[]).join(FIELD_SEP),
+      s.core_concept||"",
+      (s.science_behind||[]).join(FIELD_SEP),
+      (s.practical_protocol||[]).join(FIELD_SEP),
+      (s.myths_debunked||[]).join(FIELD_SEP),
+      s.the_story||"",
+      (s.key_decisions||[]).join(FIELD_SEP),
+      (s.lessons_learned||[]).join(FIELD_SEP),
+      (s.best_quotes||[]).join(FIELD_SEP),
+      s.one_minute_recap||"",
+      s.five_min_read||""
+    ]);
+  });
+  await writeSheet("Summaries", rows);
+}
+
+// Sheet 4: Playbook
+async function pushPlaybook(){
+  const rows = [["Item ID","Insight","Life Area","Life Area Label","Action Commitment","Status","Source Episode","Saved At"]];
+  pbItems.forEach(p => {
+    const area = LIFE_AREAS[p.area] || LIFE_AREAS.other;
+    rows.push([p.itemId||"", p.text||"", p.area||"", area.label||"", p.action||"", p.status||"todo", p.sourceTitle||"", p.addedAt||""]);
+  });
+  await writeSheet("Playbook", rows);
+}
+
+// Sheet 5: Collection
+async function pushCollection(){
+  const rows = [["Item ID","Type","Type Label","Text","Source Episode"]];
+  col.forEach(c => rows.push([c.itemId||"", c.type||"", c.typeLabel||"", c.text||"", c.sourceTitle||""]));
+  await writeSheet("Collection", rows);
+}
+
+// Sheet 6: News Digest
+async function pushNewsDigest(){
+  const rows = [["Item ID","Headline","Why It Matters","What To Watch","Tags","Source Episode","Following","Saved At"]];
+  newsItems.forEach(n => {
+    rows.push([n.itemId||"", n.headline||"", n.why||"", n.watch||"", (n.tags||[]).join(", "), n.sourceTitle||"", n.following ? "Yes" : "No", n.savedAt||""]);
+  });
+  await writeSheet("News Digest", rows);
+}
+
+async function loadFromSheets(silent){
+  if (!gToken || !SHEET_ID || !workerUrl) return;
+  setSyncStatus("Loading from Sheets…");
+  try {
+    const [podR, epR, sumR, pbR, colR, ndR] = await Promise.all([
+      readSheet("Podcasts").catch(()=>[]),
+      readSheet("Episodes"),
+      readSheet("Summaries"),
+      readSheet("Playbook"),
+      readSheet("Collection"),
+      readSheet("News Digest").catch(()=>[])
+    ]);
+
+    // Podcasts — merge onto existing so gradients/abbrs are kept
+    if (podR.length > 1) {
+      podR.slice(1).filter(r => r[0]).forEach(r => {
+        const key = r[0];
+        const prev = PODCASTS[key] || {};
+        const name = r[1] || prev.name || key;
+        PODCASTS[key] = {
+          name,
+          abbr: prev.abbr || (name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2)),
+          podType: r[2] || prev.podType || "interview",
+          appleId: r[4] || prev.appleId || null,
+          art: r[5] || prev.art || null,
+          rssUrl: r[6] || prev.rssUrl || null,
+          gradient: prev.gradient || PODCAST_COLORS[Object.keys(PODCASTS).length % PODCAST_COLORS.length]
+        };
+      });
+      savePodcasts();
+    }
+
+    // Episodes — union by id. If this device only has the untouched starter
+    // examples and the sheet has real data, drop the starters first.
+    const sheetEps = epR.length > 1 ? epR.slice(1).filter(r => r[0]).map(r => ({
+      id:r[0], podcast:r[1]||"doac", title:r[3]||"", guest:r[4]||"",
+      date:r[5]||"", link:r[6]||"", desc:r[8]||""
+    })) : [];
+    if (sheetEps.length) {
+      const pristineSeeds = episodes.every(e => e.id.startsWith("seed-")) && !Object.keys(summaries).length;
+      if (pristineSeeds) episodes = [];
+      const haveEp = new Set(episodes.map(e => e.id));
+      const incoming = sheetEps.filter(e => !haveEp.has(e.id));
+      episodes = [...episodes, ...incoming];
+      saveEpisodes();
+    }
+
+    // Summaries — add ones we don't have; local versions win
+    if (sumR.length > 1) {
+      sumR.slice(1).filter(r => r[0] && !summaries[r[0]]).forEach(r => {
+        const splitList = (i) => (r[i]||"").split(FIELD_SEP).filter(Boolean);
+        summaries[r[0]] = {
+          tags: (r[4]||"").split(", ").filter(Boolean),
+          executive_summary: r[5]||"",
+          key_ideas: splitList(6),
+          action_steps: splitList(7),
+          top_stories: parseStories(r[8]),
+          quick_context: splitList(9),
+          what_to_watch: splitList(10),
+          core_concept: r[11]||"",
+          science_behind: splitList(12),
+          practical_protocol: splitList(13),
+          myths_debunked: splitList(14),
+          the_story: r[15]||"",
+          key_decisions: splitList(16),
+          lessons_learned: splitList(17),
+          best_quotes: splitList(18),
+          one_minute_recap: r[19]||"",
+          five_min_read: r[20]||""
+        };
+      });
+      saveSummaries();
+    }
+
+    // Playbook — union by itemId; local wins (fresher status edits)
+    if (pbR.length > 1) {
+      const havePb = new Set(pbItems.map(i => i.itemId));
+      pbR.slice(1).filter(r => r[0] && !havePb.has(r[0])).forEach(r => {
+        pbItems.push({
+          itemId:r[0], text:r[1], area:r[2], action:r[4],
+          status:r[5]||"todo", sourceTitle:r[6], addedAt:r[7],
+          type:"", typeLabel:"", sourceEpId:r[0].split("::")[0]
+        });
+      });
+      savePb();
+    }
+
+    // Collection — union by itemId
+    if (colR.length > 1) {
+      const haveCol = new Set(col.map(i => i.itemId));
+      colR.slice(1).filter(r => r[0] && !haveCol.has(r[0])).forEach(r => {
+        col.push({
+          itemId:r[0], type:r[1], typeLabel:r[2], text:r[3], sourceTitle:r[4],
+          sourceEpId:r[0].split("::")[0]
+        });
+      });
+      saveCol();
+    }
+
+    // News Digest — union by itemId
+    if (ndR.length > 1) {
+      const haveNd = new Set(newsItems.map(i => i.itemId));
+      ndR.slice(1).filter(r => r[0] && !haveNd.has(r[0])).forEach(r => {
+        newsItems.push({
+          itemId:r[0], headline:r[1]||"", why:r[2]||"", watch:r[3]||"",
+          tags:(r[4]||"").split(", ").filter(Boolean),
+          sourceTitle:r[5]||"", sourceEpId:r[0].split("::")[0],
+          following:r[6]==="Yes", savedAt:r[7]||""
+        });
+      });
+      saveNews();
+    }
+
+    filtered = [...episodes];
+    renderPodcastSelect(); renderEpGroups(); renderHomeRows(); loadRandom();
+    renderColList(); renderPlaybook(); renderWeeklyFocus(); renderNewsDigest();
+    setSyncStatus("Loaded · " + new Date().toLocaleTimeString(), "var(--success-text)");
+    if (!silent) toast("Data loaded from Google Sheets");
+  } catch(e) { setSyncStatus("Load error: " + e.message, "var(--danger)"); }
+}
+
+/* ════════════════════════════════════════════════════════
+   19. NAV + BOOT
+   ════════════════════════════════════════════════════════ */
+function showTab(name){
+  currentTab = name;
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("visible"));
+  document.getElementById("tab-" + name).classList.add("visible");
+  document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+  if (name === "browse")     { filtered = [...episodes]; renderEpGroups(); }
+  if (name === "collection")   renderColList();
+  if (name === "playbook")   { renderPlaybook(); renderWeeklyFocus(); }
+  if (name === "news")         renderNewsDigest();
+  renderBulkBar();
+}
+
+function saveWorkerUrl(v){
+  workerUrl = v.trim();
+  localStorage.setItem("worker-url", workerUrl);
+  if (workerUrl) document.getElementById("setup-banner").style.display = "none";
+}
+function initBanner(){
+  if (workerUrl) document.getElementById("setup-banner").style.display = "none";
+}
+let connectDismissed = false;
+function dismissConnectBanner(){
+  connectDismissed = true;
+  document.getElementById("connect-banner").style.display = "none";
+}
+function initConnectBanner(){
+  if (GOOGLE_CLIENT_ID && SHEET_ID && !gToken) document.getElementById("connect-banner").style.display = "flex";
+}
+
+// ── Boot
+initBanner();
+initConnectBanner();
+renderPodcastSelect();
+renderEpGroups();
+loadRandom();
+fetchPodcastArtwork();
+renderColList();
+renderPlaybook();
+renderWeeklyFocus();
+renderNewsDigest();
+window.addEventListener("load", () => {
+  try { initGoogle(); } catch(e){}
+  setTimeout(autoCheckFeeds, 3000);
+});
+</script>
+</body>
+</html>
