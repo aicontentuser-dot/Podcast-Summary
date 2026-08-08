@@ -1,33 +1,19 @@
-# Podcast Summaries — GitHub + Netlify deployment
+# Podcast Summaries
 
-One static file (index.html). No build step. Update the file on GitHub
-and Netlify redeploys automatically.
+Static app + PWA. Deploys from GitHub via Cloudflare Workers (static assets).
 
-## One-time setup
+Files:
+- index.html            the whole app
+- wrangler.toml         Cloudflare deploy config (already in your repo)
+- manifest.webmanifest  PWA manifest (name, icons, standalone display)
+- icon-192.png / icon-512.png
+- sw.js                 minimal service worker (no caching — updates instant)
 
-1. GitHub: create a new repository (e.g. "Podcast-Summaries").
-   On the quick-setup page click "uploading an existing file" and upload
-   the CONTENTS of this zip (index.html, netlify.toml, README.md) to the
-   repo root. Commit.
+## Install on phone
+- iPhone (Safari): open the site → Share → "Add to Home Screen".
+- Android (Chrome): open the site → menu ⋮ → "Add to Home screen" / "Install app".
+Opens full-screen with its own icon, like a native app.
 
-2. Netlify — pick ONE:
-
-   A) KEEP your existing site URL (recommended — Google sign-in keeps
-      working without changes):
-      Netlify → your existing podcast site → Site configuration →
-      Build & deploy → Continuous deployment → "Link repository" →
-      GitHub → Podcast-Summaries. Build command: leave EMPTY.
-      Publish directory: "." — then trigger a deploy.
-
-   B) NEW site: Add new site → Import an existing project → GitHub →
-      Podcast-Summaries → Deploy (no build command, publish ".").
-      IMPORTANT: the site gets a NEW URL, so add it in Google Cloud
-      Console → APIs & Services → Credentials → your OAuth Client ID →
-      Authorized JavaScript origins (e.g. https://yoursite.netlify.app),
-      or Google sign-in will fail with a redirect/origin error.
-
-## Updating the app later
-
-GitHub → open index.html → pencil icon (Edit) → paste the new version →
-Commit. Or "Add file → Upload files" and replace it. Netlify deploys in
-~30s. Works fine from a phone browser.
+## Updating
+Replace index.html on GitHub → auto-deploys. The service worker never caches,
+so the installed app always loads the newest version.
