@@ -772,6 +772,19 @@ Object.entries(DEFAULT_PODCASTS).forEach(([k,v]) => { if(!PODCASTS[k]) PODCASTS[
 
 let episodes  = load("doac-eps-v3", SEED);
 
+// Older episodes predate publish-timestamps — derive ts from their date string
+// so they sort correctly among catalogue rows instead of sinking to the bottom
+{
+  let stamped = 0;
+  episodes.forEach(e => {
+    if (!e.ts && e.date) {
+      const t = Date.parse(e.date);
+      if (!isNaN(t)) { e.ts = t; stamped++; }
+    }
+  });
+  if (stamped) save("doac-eps-v3", episodes);
+}
+
 // Repair episodes that got filed under a podcast NAME instead of its key
 // (round-trip bug in earlier sheet syncs) — fold them back into the real podcast
 {
@@ -1138,7 +1151,17 @@ async function importFeed(podKey, silent){
   try {
     delete feedCache[podKey];
     const feedEps = await getFullFeed(podKey);
-    const have = new Set(episodes.filter(e => e.podcast === podKey).map(e => normTitle(e.title)));
+    const byTitle = new Map(episodes.filter(e => e.podcast === podKey).map(e => [normTitle(e.title), e]));
+    let healed = 0;
+    feedEps.forEach(fe => {
+      const ex = byTitle.get(normTitle(fe.title));
+      if (!ex) return;
+      if (!ex.ts && fe.ts) { ex.ts = fe.ts; healed++; }
+      if (!ex.date && fe.date) ex.date = fe.date;
+      if (!ex.link && fe.link) ex.link = fe.link;
+    });
+    if (healed) saveEpisodes();
+    const have = new Set(byTitle.keys());
     const fresh = feedEps
       .filter(fe => fe.title && !have.has(normTitle(fe.title)))
       .map(fe => ({
@@ -2477,7 +2500,8 @@ async function loadFromSheets(silent){
     // examples and the sheet has real data, drop the starters first.
     const sheetEps = epR.length > 1 ? epR.slice(1).filter(r => r[0]).map(r => ({
       id:r[0], podcast:resolvePodKey(r[1]), title:r[3]||"", guest:r[4]||"",
-      date:r[5]||"", link:r[6]||"", desc:r[8]||""
+      date:r[5]||"", ts:(r[5] && !isNaN(Date.parse(r[5]))) ? Date.parse(r[5]) : 0,
+      link:r[6]||"", desc:r[8]||""
     })) : [];
     if (sheetEps.length) {
       const pristineSeeds = episodes.every(e => e.id.startsWith("seed-")) && !Object.keys(summaries).length;
