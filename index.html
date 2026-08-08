@@ -2495,6 +2495,13 @@ async function pushNewsDigest(){
 async function loadFromSheets(silent){
   if (!gToken || !SHEET_ID || !workerUrl) return;
   setSyncStatus("Loading from Sheets…");
+  const epAlias = {};   // sheet episode id → local episode id (same episode, generated on another device)
+  const mapEpId = (id) => epAlias[id] || id;
+  const mapItemId = (itemId) => {
+    const parts = (itemId || "").split("::");
+    parts[0] = mapEpId(parts[0]);
+    return parts.join("::");
+  };
   try {
     const [podR, epR, sumR, pbR, colR, ndR] = await Promise.all([
       readSheet("Podcasts").catch(()=>[]),
@@ -2535,15 +2542,22 @@ async function loadFromSheets(silent){
       const pristineSeeds = episodes.every(e => e.id.startsWith("seed-")) && !Object.keys(summaries).length;
       if (pristineSeeds) episodes = [];
       const haveEp = new Set(episodes.map(e => e.id));
-      const haveTitle = new Set(episodes.map(e => (e.podcast||"doac") + "|" + normTitle(e.title)));
-      const incoming = sheetEps.filter(e => !haveEp.has(e.id) && !haveTitle.has((e.podcast||"doac") + "|" + normTitle(e.title)));
+      const titleMap = new Map(episodes.map(e => [(e.podcast||"doac") + "|" + normTitle(e.title), e]));
+      const incoming = [];
+      sheetEps.forEach(e => {
+        if (haveEp.has(e.id)) return;
+        const local = titleMap.get((e.podcast||"doac") + "|" + normTitle(e.title));
+        if (local) { epAlias[e.id] = local.id; return; }   // same episode, different id — remember the mapping
+        incoming.push(e);
+      });
       episodes = [...episodes, ...incoming];
       saveEpisodes();
     }
 
     // Summaries — add ones we don't have; local versions win
     if (sumR.length > 1) {
-      sumR.slice(1).filter(r => r[0] && !summaries[r[0]]).forEach(r => {
+      sumR.slice(1).map(r => { const m = [...r]; m[0] = mapEpId(r[0]); return m; })
+        .filter(r => r[0] && !summaries[r[0]]).forEach(r => {
         const splitList = (i) => (r[i]||"").split(FIELD_SEP).filter(Boolean);
         summaries[r[0]] = {
           tags: (r[4]||"").split(", ").filter(Boolean),
@@ -2571,11 +2585,13 @@ async function loadFromSheets(silent){
     // Playbook — union by itemId; local wins (fresher status edits)
     if (pbR.length > 1) {
       const havePb = new Set(pbItems.map(i => i.itemId));
-      pbR.slice(1).filter(r => r[0] && !havePb.has(r[0])).forEach(r => {
+      pbR.slice(1).filter(r => r[0]).forEach(r => {
+        const iid = mapItemId(r[0]);
+        if (havePb.has(iid)) return;
         pbItems.push({
-          itemId:r[0], text:r[1], area:r[2], action:r[4],
+          itemId:iid, text:r[1], area:r[2], action:r[4],
           status:r[5]||"todo", sourceTitle:r[6], addedAt:r[7],
-          type:"", typeLabel:"", sourceEpId:r[0].split("::")[0]
+          type:"", typeLabel:"", sourceEpId:iid.split("::")[0]
         });
       });
       savePb();
@@ -2584,10 +2600,12 @@ async function loadFromSheets(silent){
     // Collection — union by itemId
     if (colR.length > 1) {
       const haveCol = new Set(col.map(i => i.itemId));
-      colR.slice(1).filter(r => r[0] && !haveCol.has(r[0])).forEach(r => {
+      colR.slice(1).filter(r => r[0]).forEach(r => {
+        const iid = mapItemId(r[0]);
+        if (haveCol.has(iid)) return;
         col.push({
-          itemId:r[0], type:r[1], typeLabel:r[2], text:r[3], sourceTitle:r[4],
-          sourceEpId:r[0].split("::")[0]
+          itemId:iid, type:r[1], typeLabel:r[2], text:r[3], sourceTitle:r[4],
+          sourceEpId:iid.split("::")[0]
         });
       });
       saveCol();
@@ -2596,11 +2614,13 @@ async function loadFromSheets(silent){
     // News Digest — union by itemId
     if (ndR.length > 1) {
       const haveNd = new Set(newsItems.map(i => i.itemId));
-      ndR.slice(1).filter(r => r[0] && !haveNd.has(r[0])).forEach(r => {
+      ndR.slice(1).filter(r => r[0]).forEach(r => {
+        const iid = mapItemId(r[0]);
+        if (haveNd.has(iid)) return;
         newsItems.push({
-          itemId:r[0], headline:r[1]||"", why:r[2]||"", watch:r[3]||"",
+          itemId:iid, headline:r[1]||"", why:r[2]||"", watch:r[3]||"",
           tags:(r[4]||"").split(", ").filter(Boolean),
-          sourceTitle:r[5]||"", sourceEpId:r[0].split("::")[0],
+          sourceTitle:r[5]||"", sourceEpId:iid.split("::")[0],
           following:r[6]==="Yes", savedAt:r[7]||""
         });
       });
