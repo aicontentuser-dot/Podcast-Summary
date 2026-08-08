@@ -2255,8 +2255,23 @@ function importData(e){
    Collection, News Digest. Push replaces sheet contents;
    Load pulls everything back (incl. podcasts + top stories).
    ════════════════════════════════════════════════════════ */
-let gToken = null;
+// Token survives refreshes: stored with its expiry, restored on load.
+let gToken = localStorage.getItem("g-token") || null;
 let gClient = null;
+{
+  const exp = parseInt(localStorage.getItem("g-token-expiry") || "0", 10);
+  if (gToken && Date.now() > exp) gToken = null;   // expired — needs a fresh tap
+}
+function storeToken(tok, expiresIn){
+  gToken = tok;
+  localStorage.setItem("g-token", tok);
+  localStorage.setItem("g-token-expiry", String(Date.now() + ((expiresIn || 3600) - 120) * 1000));
+}
+function clearToken(){
+  gToken = null;
+  localStorage.removeItem("g-token");
+  localStorage.removeItem("g-token-expiry");
+}
 
 function initGoogle(){
   if (!GOOGLE_CLIENT_ID) return;
@@ -2265,7 +2280,7 @@ function initGoogle(){
     scope: "https://www.googleapis.com/auth/spreadsheets",
     callback: (resp) => {
       if (resp.error) { toast("Google sign-in failed: " + resp.error); return; }
-      gToken = resp.access_token;
+      storeToken(resp.access_token, resp.expires_in);
       updateSyncUI(true);
       onConnected();
     }
@@ -2273,13 +2288,21 @@ function initGoogle(){
 }
 function signInGoogle(){
   if (!GOOGLE_CLIENT_ID || !SHEET_ID) { toast("Fill in GOOGLE_CLIENT_ID and SHEET_ID in the HTML first"); return; }
-  gClient.requestAccessToken();
+  // prompt:"" skips the consent screen when access was already granted — one tap
+  gClient.requestAccessToken({ prompt: "" });
 }
 function signOutGoogle(){
   if (gToken) google.accounts.oauth2.revoke(gToken, ()=>{});
-  gToken = null;
+  clearToken();
   updateSyncUI(false);
   toast("Signed out of Google");
+}
+// Called when a Sheets request comes back unauthorized mid-session
+function handleAuthExpired(){
+  clearToken();
+  connectDismissed = false;
+  updateSyncUI(false);
+  setSyncStatus("Google session expired — tap Connect to keep syncing", "var(--danger)");
 }
 function updateSyncUI(on){
   document.getElementById("connect-banner").style.display = on ? "none" : (connectDismissed ? "none" : "flex");
@@ -2302,7 +2325,12 @@ async function sheetsReq(method, path, body){
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token:gToken, method, sheetsUrl, body: body || undefined })
   });
-  return res.json();
+  const data = await res.json();
+  if (data && data.error && (data.error.code === 401 || data.error.status === "UNAUTHENTICATED")) {
+    handleAuthExpired();
+    throw new Error("Google session expired — tap Connect");
+  }
+  return data;
 }
 
 const SHEET_NAMES = ["Podcasts","Episodes","Summaries","Playbook","Collection","News Digest"];
@@ -2623,6 +2651,7 @@ function initConnectBanner(){
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 initBanner();
 initConnectBanner();
+if (gToken) { updateSyncUI(true); loadFromSheets(true).catch(()=>{}); }
 renderPodcastSelect();
 renderEpGroups();
 loadRandom();
