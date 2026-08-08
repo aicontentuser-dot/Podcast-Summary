@@ -4,6 +4,14 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Podcast Summaries</title>
+<meta name="theme-color" content="#f6f5f3" media="(prefers-color-scheme: light)"/>
+<meta name="theme-color" content="#17171a" media="(prefers-color-scheme: dark)"/>
+<link rel="manifest" href="manifest.webmanifest"/>
+<link rel="apple-touch-icon" href="icon-192.png"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="Podcasts"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css"/>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <style>
@@ -33,6 +41,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 @keyframes spin{to{transform:rotate(360deg);}}
 @media(max-width:480px){.shell{padding:1rem 0.75rem 3rem;}.hero-title{font-size:16px;}}
 
+/* ── Desktop layout: sidebar navigation ── */
+@media(min-width:940px){
+  body::before{content:'';position:fixed;left:0;top:0;bottom:0;width:236px;background:var(--surface);border-right:1px solid var(--border);z-index:5;}
+  .topbar{position:fixed;left:0;top:0;width:236px;z-index:6;margin:0;padding:1.4rem 1.2rem 1rem;}
+  .nav{position:fixed;left:0;top:96px;width:236px;z-index:6;flex-direction:column;background:none;padding:0 0.9rem;gap:2px;border-radius:0;}
+  .nav button{flex:none;display:flex;align-items:center;gap:10px;text-align:left;padding:10px 12px;font-size:13.5px;border-radius:10px;}
+  .nav button i{display:inline;font-size:17px;}
+  .nav button:hover{background:var(--surface-2);}
+  .nav button.active{background:var(--accent-bg);color:var(--accent-text);box-shadow:none;}
+  .shell{margin-left:236px;max-width:1080px;padding:1.7rem 2.2rem 4.5rem;}
+  .bulk-bar{left:236px;}
+  .tile-grid{grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:12px;}
+  .pod-grid{grid-template-columns:repeat(auto-fill,minmax(165px,1fr));}
+  .summary-panel{max-width:800px;}
+  .modal{max-width:480px;}
+  .modal.modal-lg{max-width:600px;}
+}
+
 /* ════════════════════════════════════════════════════════
    CHROME — banner, topbar, nav, toast
    ════════════════════════════════════════════════════════ */
@@ -49,6 +75,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .nav{display:flex;gap:4px;background:var(--surface-2);padding:4px;border-radius:13px;margin-bottom:1.4rem;}
 .nav button{flex:1;padding:8px;border:none;border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;background:transparent;color:var(--text-2);transition:all 0.12s;}
 .nav button.active{background:var(--surface);color:var(--text);font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,0.08);}
+.nav button i{display:none;}
 
 .section{display:none;}.section.visible{display:block;}
 
@@ -397,11 +424,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 
 <!-- Nav -->
 <div class="nav" id="nav">
-  <button class="active" data-tab="home" onclick="showTab('home')">Home</button>
-  <button data-tab="browse" onclick="showTab('browse')">Episodes</button>
-  <button data-tab="collection" onclick="showTab('collection')">Collection</button>
-  <button data-tab="playbook" onclick="showTab('playbook')">Playbook</button>
-  <button data-tab="news" onclick="showTab('news')">News</button>
+  <button class="active" data-tab="home" onclick="showTab('home')"><i class="ti ti-layout-grid"></i><span>Home</span></button>
+  <button data-tab="browse" onclick="showTab('browse')"><i class="ti ti-microphone"></i><span>Episodes</span></button>
+  <button data-tab="collection" onclick="showTab('collection')"><i class="ti ti-bookmarks"></i><span>Collection</span></button>
+  <button data-tab="playbook" onclick="showTab('playbook')"><i class="ti ti-target-arrow"></i><span>Playbook</span></button>
+  <button data-tab="news" onclick="showTab('news')"><i class="ti ti-news"></i><span>News</span></button>
 </div>
 
 <!-- ══ HOME ═══════════════════════════════════════════ -->
@@ -2569,6 +2596,7 @@ function initConnectBanner(){
 }
 
 // ── Boot
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 initBanner();
 initConnectBanner();
 renderPodcastSelect();
