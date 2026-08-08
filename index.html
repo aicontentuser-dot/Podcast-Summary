@@ -227,25 +227,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .pod-type-badge{font-size:10.5px;color:var(--text-3);background:var(--surface-2);padding:2px 8px;border-radius:100px;}
 .check-status{display:none;font-size:11px;color:var(--text-3);}
 
-/* Slim group headers in the All view */
-.pod-group{margin-bottom:1.35rem;}
-.pod-group-header{display:flex;align-items:center;gap:9px;padding:0 0 0.55rem;cursor:pointer;}
-.pod-group-header:hover h3{color:var(--accent-text);}
-.pod-group-header h3{font-size:13px;font-weight:700;transition:color 0.12s;}
-.pod-group-header .pgh-ct{font-size:12px;color:var(--text-3);}
-.pod-group-header .pgh-open{margin-left:auto;font-size:12px;color:var(--text-3);display:flex;align-items:center;gap:3px;}
 
-.suggestions{background:var(--success-bg);border:1px solid var(--success-text);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;}
-.suggestions-head{font-size:12px;font-weight:700;color:var(--success-text);margin-bottom:8px;display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;}
-.suggestions.collapsed .suggestions-head{margin-bottom:0;}
-.sug-toggle{margin-left:auto;font-weight:600;font-size:11.5px;display:flex;align-items:center;gap:3px;opacity:0.85;}
-.suggestion{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-top:1px solid rgba(0,0,0,0.06);}
-.suggestion-info{flex:1;min-width:0;}
-.suggestion-title{font-size:13px;font-weight:600;color:var(--text);}
-.suggestion-date{font-size:11px;color:var(--text-3);}
-.suggestion-add{background:var(--success-text);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;}
-.suggestions-more{padding-top:8px;border-top:1px solid rgba(0,0,0,0.06);}
-.suggestions-more button{background:none;border:none;cursor:pointer;color:var(--success-text);font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:4px;}
 
 .episode-list{display:flex;flex-direction:column;gap:6px;margin-bottom:0.4rem;}
 .ep-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:0.85rem 1rem;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all 0.12s;}
@@ -280,19 +262,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .bulk-progress-fill{height:100%;border-radius:100px;background:var(--accent);transition:width 0.3s;}
 @media(prefers-color-scheme:dark){.bulk-bar-inner{background:#f1f0ee;color:#17171a;}.bulk-btn{background:rgba(0,0,0,0.1);color:#17171a;}.bulk-progress{background:rgba(0,0,0,0.12);}}
 
-/* Catalogue modal */
-.modal.modal-lg{max-width:560px;max-height:min(80vh,640px);display:flex;flex-direction:column;}
-.cat-sub{font-size:12px;color:var(--text-3);margin:-0.6rem 0 0.8rem;}
-.cat-list{flex:1;overflow-y:auto;margin:0 -0.4rem;padding:0 0.4rem;display:flex;flex-direction:column;gap:5px;min-height:120px;}
-.cat-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:all 0.12s;background:var(--surface);}
-.cat-item:hover{border-color:var(--border-strong);}
-.cat-item.selected{border-color:var(--accent);background:var(--accent-bg);}
-.cat-item-info{flex:1;min-width:0;}
-.cat-item-title{font-size:13px;font-weight:600;line-height:1.35;}
-.cat-item-date{font-size:11px;color:var(--text-3);margin-top:1px;}
-.cat-footer{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:1rem;}
-.cat-count{font-size:12px;color:var(--text-3);margin-left:auto;}
-.cat-loading{text-align:center;padding:2.5rem 1rem;color:var(--text-3);font-size:13px;}
+.pod-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));}
+.pod-card{align-items:center;text-align:center;gap:9px;padding:1.1rem 0.9rem;}
+.pod-card .tile-foot{justify-content:center;}
+.pod-card-art{margin-bottom:2px;}
+.search-count{font-size:12px;color:var(--text-3);margin-bottom:0.6rem;}
+.ep-item.cat .ep-title-sm{font-weight:500;color:var(--text-2);}
+.ep-pod-tag{color:var(--accent-text);font-weight:600;margin-right:7px;}
 
 .summary-panel{padding:1.3rem;margin-top:10px;position:relative;overflow:hidden;}
 .panel-title{font-size:16px;font-weight:700;line-height:1.3;margin-bottom:2px;}
@@ -611,25 +587,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
   </div>
 </div>
 
-<!-- Catalogue Modal — full feed history for one podcast -->
-<div class="modal-backdrop" id="catalogue-modal">
-  <div class="modal modal-lg">
-    <h2 id="cat-title">Catalogue</h2>
-    <p class="cat-sub" id="cat-sub">Every episode from the feed that isn't in your list yet.</p>
-    <div class="search-wrap" style="margin-bottom:0.7rem">
-      <i class="ti ti-search"></i>
-      <input type="text" id="cat-search" placeholder="Search the catalogue…" oninput="filterCatalogue(this.value)"/>
-    </div>
-    <div class="cat-list" id="cat-list"></div>
-    <div class="cat-footer">
-      <button class="btn btn-sm" id="cat-add-btn" onclick="catalogueAdd(false)"><i class="ti ti-plus"></i> Add</button>
-      <button class="btn btn-sm btn-primary" id="cat-gen-btn" onclick="catalogueAdd(true)"><i class="ti ti-sparkles"></i> Add &amp; generate</button>
-      <button class="btn btn-sm" onclick="hideCatalogue()">Close</button>
-      <span class="cat-count" id="cat-count"></span>
-    </div>
-  </div>
-</div>
-
 <!-- Bulk generate bar -->
 <div class="bulk-bar" id="bulk-bar"></div>
 
@@ -812,21 +769,19 @@ let favs      = new Set(load("doac-favs-v3", []));
 let col       = load("doac-col-v3", []);
 let pbItems   = load("doac-pb-v1", []);
 let newsItems = load("doac-news-v1", []);
-let newEpSuggestions = load("doac-new-eps-v1", {});   // { podKey: [{title,guest,date,link,desc}] }
-if (!PODCASTS.hibt && newEpSuggestions.hibt) { delete newEpSuggestions.hibt; save("doac-new-eps-v1", newEpSuggestions); }
+
 let weeklyFocus = load("doac-weekly-focus-v1", { items:{}, refreshedAt:0 });
 
 let filtered = [...episodes];
 let curId = null, homeId = null;
 let colFilter = "all", pbFilter = "all", ndFilter = "all";
-let expandedSuggestions = {};   // { podKey: bool } — session only
 
 // Episodes tab UI state (session only)
 let podFilter = "all";                 // "all" | podKey — driven by the pod rail
 let selectMode = false;                // bulk-select mode on the episode list
 let selectedEps = new Set();           // episode ids ticked for bulk generate
 let feedCache = {};                    // { podKey: { items, fetchedAt } } — full feed history
-let catState = { podKey:null, items:[], selected:new Set(), q:"" };
+let pageFilter = "all";                // per-podcast page filter: all | ready | favs
 let bulk = { active:false, total:0, done:0, failed:[], cancelled:false, current:"" };
 let bulkResult = null;                 // { ok, failed:[] } — shown in bar until dismissed
 let currentTab = "home";
@@ -841,7 +796,6 @@ function saveFavs(){ save("doac-favs-v3", [...favs]); }
 function saveCol(){ save("doac-col-v3", col); }
 function savePb(){ save("doac-pb-v1", pbItems); }
 function saveNews(){ save("doac-news-v1", newsItems); }
-function saveNewEps(){ save("doac-new-eps-v1", newEpSuggestions); }
 
 /* ════════════════════════════════════════════════════════
    4. HELPERS
@@ -869,6 +823,16 @@ function resolvePodKey(v){
   const byName = Object.entries(PODCASTS).find(([,p]) => (p.name||"").toLowerCase() === raw.toLowerCase());
   return byName ? byName[0] : raw;
 }
+
+function normTitle(t){ return (t||"").toLowerCase().replace(/\s+/g," ").trim(); }
+function hashStr(str){
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
+// Deterministic id for catalogued episodes — the same episode gets the same id
+// on every device, so sheet-merge never duplicates it.
+function catId(podKey, title){ return "cat-" + podKey + "-" + hashStr(normTitle(title)); }
 
 function getPodcast(key){
   return PODCASTS[key] || { name:key, abbr:String(key).slice(0,2).toUpperCase(), gradient:PODCAST_COLORS[4], art:null };
@@ -973,7 +937,24 @@ async function aiRequest(prompt, maxTokens){
   return { text: tb.text, truncated: data.stop_reason === "max_tokens" };
 }
 
+// Catalogued episodes store no show notes; pull them from the feed at generate time
+async function enrichFromFeed(ep){
+  if (ep.desc || !ep.podcast) return;
+  try {
+    const feed = await getFullFeed(ep.podcast);
+    const hit = feed.find(fe => normTitle(fe.title) === normTitle(ep.title));
+    if (hit) {
+      ep.desc = hit.desc || "";
+      if (!ep.link) ep.link = hit.link || "";
+      if (!ep.guest) ep.guest = hit.guest || "";
+      if (!ep.date) { ep.date = hit.date || ""; ep.ts = hit.ts || ep.ts || 0; }
+      saveEpisodes();
+    }
+  } catch(e) { /* generate without notes if the feed is unreachable */ }
+}
+
 async function callAI(ep){
+  await enrichFromFeed(ep);
   const type = getTypeDef(ep);
   const desc = ep.desc ? "\nShow notes: " + ep.desc.slice(0,600) : "";
   const note = !ep.desc ? "\nNo description provided — use your general knowledge of this episode/guest if recognisable, else give a plausible general take." : "";
@@ -1041,10 +1022,9 @@ function deletePodcast(key){
     : `Remove "${pod.name}"?`;
   if (!confirm(msg)) return;
   delete PODCASTS[key];
-  delete newEpSuggestions[key];
   episodes = episodes.filter(e => e.podcast !== key);
   epIds.forEach(id => { delete summaries[id]; favs.delete(id); });
-  savePodcasts(); saveNewEps(); saveEpisodes(); saveSummaries(); saveFavs();
+  savePodcasts(); saveEpisodes(); saveSummaries(); saveFavs();
   filtered = [...episodes];
   if (podFilter === key) podFilter = "all";
   delete feedCache[key];
@@ -1109,80 +1089,66 @@ function parseRssFeed(xmlText, limit = Infinity){
     const descEl = it.querySelector("description");
     const desc = descEl ? (descEl.textContent || "").replace(/<[^>]+>/g,"").replace(/\s+/g," ").trim().slice(0,500) : "";
     const d = pubDate ? new Date(pubDate) : null;
-    const date = d ? d.toLocaleDateString("en-GB",{ day:"numeric", month:"short", year:"numeric" }) : "";
+    const ts = d && !isNaN(d) ? d.getTime() : 0;
+    const date = d && !isNaN(d) ? d.toLocaleDateString("en-GB",{ day:"numeric", month:"short", year:"numeric" }) : "";
     const gm = title.match(/^(.+?):/);
     const guest = gm ? gm[1].trim().slice(0,70) : "";
-    return { title, guest, date, link, desc };
+    return { title, guest, date, ts, link, desc };
   });
 }
 
-async function checkNewEpisodes(podKey){
+async function importFeed(podKey, silent){
   const pod = getPodcast(podKey);
   const statusEl = document.getElementById(`check-status-${podKey}`);
   const setStatus = (text) => { if (statusEl) { statusEl.textContent = text; statusEl.style.display = text ? "inline" : "none"; } };
 
   if (!pod.appleId && !pod.rssUrl) {
-    toast(`"${pod.name}" has no Apple ID or RSS URL — edit the podcast to add one`);
+    if (!silent) toast(`"${pod.name}" has no Apple ID or RSS URL — add a feed first`);
     setStatus("No feed URL");
     return;
   }
-  setStatus("Checking…");
+  setStatus(pod.catAt ? "Checking…" : "Importing catalogue…");
   try {
-    const feedUrl = pod.rssUrl || await getRssFeedUrl(pod.appleId);
-    const feedEps = parseRssFeed(await proxyFetch(feedUrl), 20);
-    const existingTitles = new Set(
-      episodes.filter(e => e.podcast === podKey).map(e => e.title.toLowerCase().trim())
-    );
-    const newOnes = feedEps.filter(fe => !existingTitles.has(fe.title.toLowerCase().trim()));
-    newEpSuggestions[podKey] = newOnes;
-    expandedSuggestions[podKey] = false;
-    saveNewEps();
+    delete feedCache[podKey];
+    const feedEps = await getFullFeed(podKey);
+    const have = new Set(episodes.filter(e => e.podcast === podKey).map(e => normTitle(e.title)));
+    const fresh = feedEps
+      .filter(fe => fe.title && !have.has(normTitle(fe.title)))
+      .map(fe => ({
+        id: catId(podKey, fe.title),
+        podcast: podKey,
+        title: fe.title, guest: fe.guest, date: fe.date, ts: fe.ts || 0,
+        link: fe.link, desc: ""            // notes are re-fetched at generate time — keeps storage tiny
+      }));
+    if (fresh.length) {
+      episodes = [...fresh, ...episodes];
+      saveEpisodes();
+      scheduleSave();
+    }
+    pod.catAt = Date.now();
+    savePodcasts();
+    filtered = [...episodes];
     renderEpGroups();
     setStatus("");
-    toast(newOnes.length
-      ? `${newOnes.length} new episode${newOnes.length>1?"s":""} found for "${pod.name}"`
-      : `"${pod.name}" — no new episodes found`);
+    if (!silent) toast(fresh.length
+      ? `${fresh.length} episode${fresh.length>1?"s":""} added to "${pod.name}"`
+      : `"${pod.name}" is up to date`);
   } catch(e) {
     setStatus("Failed: " + e.message.slice(0,50));
-    toast("Feed check failed: " + e.message.slice(0,70));
+    if (!silent) toast("Feed import failed: " + e.message.slice(0,70));
   }
 }
+const checkNewEpisodes = importFeed;   // old name, same action
 
 async function checkAllPodcasts(){
   const podKeys = Object.keys(PODCASTS).filter(k => PODCASTS[k].appleId || PODCASTS[k].rssUrl);
   if (!podKeys.length) { toast("Add Apple Podcast IDs to your podcasts to enable feed checking"); return; }
-  toast("Checking all feeds…");
-  await Promise.all(podKeys.map(k => checkNewEpisodes(k).catch(()=>{})));
+  toast("Refreshing all catalogues…");
+  await Promise.all(podKeys.map(k => importFeed(k, true).catch(()=>{})));
+  toast("Catalogues refreshed");
 }
 
-function addSuggestedEp(podKey, idx){
-  const fe = (newEpSuggestions[podKey] || [])[idx];
-  if (!fe) return;
-  episodes.unshift({
-    id: "ep-" + Date.now() + "-" + idx,
-    podcast: podKey,
-    title: fe.title, guest: fe.guest, link: fe.link, desc: fe.desc, date: fe.date
-  });
-  saveEpisodes();
-  newEpSuggestions[podKey].splice(idx, 1);
-  saveNewEps();
-  filtered = [...episodes];
-  renderEpGroups();
-  scheduleSave();
-  toast("Episode added");
-}
 
-function dismissSuggestion(podKey, idx){
-  if (!newEpSuggestions[podKey]) return;
-  newEpSuggestions[podKey].splice(idx, 1);
-  saveNewEps();
-  renderEpGroups();
-}
-
-function toggleExpandSuggestions(podKey){
-  expandedSuggestions[podKey] = !expandedSuggestions[podKey];
-  renderEpGroups();
-}
 
 // Silent auto-check on load, once per session
 let autoChecked = false;
@@ -1414,185 +1380,12 @@ function openEpFromHome(id){ showTab("browse"); openEp(id); }
 /* ════════════════════════════════════════════════════════
    11. EPISODES TAB — search, groups, panel
    ════════════════════════════════════════════════════════ */
-function filterEps(){
-  const q = document.getElementById("search-input").value.toLowerCase();
-  filtered = q ? episodes.filter(e => (e.title + e.guest + e.desc).toLowerCase().includes(q)) : [...episodes];
-  renderEpGroups();
-}
-
-
-function suggestionsHtml(podKey){
-  const suggestions = newEpSuggestions[podKey] || [];
-  if (!suggestions.length) return "";
-  const expanded = !!expandedSuggestions[podKey];
-  return `<div class="suggestions ${expanded ? "" : "collapsed"}">
-    <div class="suggestions-head" onclick="toggleExpandSuggestions('${escAttr(podKey)}')">
-      <i class="ti ti-sparkle"></i> ${suggestions.length} new episode${suggestions.length>1?"s":""} found
-      <span class="sug-toggle"><i class="ti ${expanded ? "ti-chevron-up" : "ti-chevron-down"}"></i> ${expanded ? "Hide" : "Show"}</span>
-    </div>
-    ${expanded ? suggestions.map((fe,i) => `
-      <div class="suggestion">
-        <div class="suggestion-info">
-          <div class="suggestion-title">${esc(fe.title)}</div>
-          ${fe.date ? `<div class="suggestion-date">${esc(fe.date)}</div>` : ""}
-        </div>
-        <button class="suggestion-add" onclick="event.stopPropagation();addSuggestedEp('${escAttr(podKey)}',${i})"><i class="ti ti-plus"></i> Add</button>
-        <button class="icon-btn" style="font-size:14px" onclick="event.stopPropagation();dismissSuggestion('${escAttr(podKey)}',${i})"><i class="ti ti-x"></i></button>
-      </div>`).join("") : ""}
-  </div>`;
-}
-
-function epItemHtml(ep){
-  if (selectMode) {
-    const done = !!summaries[ep.id];
-    const sel = selectedEps.has(ep.id);
-    return `<div class="ep-item ${done?'locked':''} ${sel?'selected':''}" onclick="${done?'':`toggleEpSelect('${escAttr(ep.id)}')`}">
-      <span class="ep-check"><i class="ti ti-check"></i></span>
-      <div class="ep-item-info">
-        ${ep.date ? `<div class="ep-date-sm">${esc(ep.date)}</div>` : ""}
-        <div class="ep-title-sm">${esc(ep.title)}</div>
-        ${done ? '<span class="ep-badge"><i class="ti ti-check"></i> Already generated</span>' : ""}
-      </div>
-    </div>`;
-  }
-  return `<div class="ep-item ${curId===ep.id?'active':''}" onclick="openEp('${escAttr(ep.id)}')">
-    <div class="ep-item-info">
-      ${ep.date ? `<div class="ep-date-sm">${esc(ep.date)}</div>` : ""}
-      <div class="ep-title-sm">${esc(ep.title)}</div>
-      ${ep.guest ? `<div class="ep-guest-sm">${esc(ep.guest)}</div>` : ""}
-      ${summaries[ep.id] ? '<span class="ep-badge"><i class="ti ti-check"></i> Breakdown ready</span>' : ""}
-    </div>
-    <button class="ep-fav ${favs.has(ep.id)?'on':''}" onclick="event.stopPropagation();toggleFavId('${escAttr(ep.id)}')">
-      <i class="ti ${favs.has(ep.id)?'ti-heart-filled':'ti-heart'}"></i>
-    </button>
-  </div>`;
-}
-
-// Podcasts in display order: defaults first, then alphabetical.
-function orderedPodKeys(){
-  const order = ["doac","huberman","hibt"];
-  const keys = Object.keys(PODCASTS);
-  return [
-    ...order.filter(k => keys.includes(k)),
-    ...keys.filter(k => !order.includes(k)).sort((a,b) => getPodcast(a).name.localeCompare(getPodcast(b).name))
-  ];
-}
-
-function closePanel(){
-  curId = null;
-  document.getElementById("panel").style.display = "none";
-  setBrowseChrome(true);
-  renderEpGroups();
-  window.scrollTo({ top: browseScrollY });
-  browseScrollY = 0;
-}
-
-function setPodFilter(k){
-  podFilter = k;
-  if (selectMode) exitSelectMode(false);
-  browseScrollY = 0;
-  closePanel();
-}
-
-function renderPodRail(){
-  const el = document.getElementById("pod-rail");
-  if (!el) return;
-  const chips = orderedPodKeys().map(k => {
-    const n = episodes.filter(e => e.podcast === k).length;
-    return `<button class="pod-chip ${podFilter===k?'on':''}" onclick="setPodFilter('${escAttr(k)}')">
-      ${thumbHtml(k, "xs")}<span>${esc(getPodcast(k).name)}</span><span class="pc-ct">${n}</span>
-    </button>`;
-  }).join("");
-  el.innerHTML = `<button class="pod-chip pc-all ${podFilter==='all'?'on':''}" onclick="setPodFilter('all')">All<span class="pc-ct">${episodes.length}</span></button>`
-    + chips
-    + `<button class="pod-chip pc-add" onclick="showAddPodcastModal()" title="Add a podcast"><i class="ti ti-plus"></i></button>`;
-}
-
-function podHeroHtml(k, eps){
-  const p = getPodcast(k);
-  const hasFeed = !!(p.appleId || p.rssUrl);
-  const podType = getPodType(k);
-  const doneCt = eps.filter(e => summaries[e.id]).length;
-  return `<div class="pod-hero">
-    <div class="pod-hero-top">
-      ${thumbHtml(k, "md")}
-      <div class="pod-hero-info">
-        <h2>${esc(p.name)}</h2>
-        <div class="pod-hero-stats">${eps.length} episode${eps.length!==1?"s":""} · ${doneCt} with breakdowns</div>
-      </div>
-      <span class="pod-type-badge">${PODCAST_TYPES[podType]?.label || podType}</span>
-    </div>
-    <div class="pod-hero-actions">
-      ${hasFeed
-        ? `<button class="btn btn-sm" onclick="checkNewEpisodes('${escAttr(k)}')"><i class="ti ti-refresh"></i> Check feed</button>
-           <button class="btn btn-sm" onclick="openCatalogue('${escAttr(k)}')"><i class="ti ti-archive"></i> Catalogue</button>`
-        : `<button class="btn btn-sm" onclick="showRssPrompt('${escAttr(k)}')"><i class="ti ti-rss"></i> Add feed</button>`}
-      ${eps.some(e => !summaries[e.id])
-        ? `<button class="btn btn-sm" onclick="enterSelectMode()"><i class="ti ti-checkbox"></i> Select</button>` : ""}
-      <span class="check-status" id="check-status-${escAttr(k)}"></span>
-      <button class="icon-btn btn-ml" onclick="deletePodcast('${escAttr(k)}')" title="Remove podcast"><i class="ti ti-trash"></i></button>
-    </div>
-  </div>`;
-}
-
-function renderEpGroups(){
-  renderPodRail();
-  const el = document.getElementById("ep-groups");
-
-  // Single-podcast view — header card, suggestions, flat list
-  if (podFilter !== "all") {
-    if (!PODCASTS[podFilter]) { podFilter = "all"; renderPodRail(); }
-  }
-  if (podFilter !== "all") {
-    const eps = filtered.filter(e => (e.podcast || "doac") === podFilter);
-    const allEps = episodes.filter(e => (e.podcast || "doac") === podFilter);
-    const q = document.getElementById("search-input").value.trim();
-    el.innerHTML = podHeroHtml(podFilter, allEps)
-      + suggestionsHtml(podFilter)
-      + (eps.length
-          ? `<div class="episode-list">${eps.map(epItemHtml).join("")}</div>`
-          : `<div class="empty"><i class="ti ti-microphone"></i>${q ? "No episodes match your search." : "No episodes yet.<br>Check the feed or browse the catalogue to pull some in."}</div>`);
-    renderBulkBar();
-    return;
-  }
-
-  // All view — slim clickable groups
-  if (!filtered.length) {
-    el.innerHTML = '<div class="empty"><i class="ti ti-microphone"></i>No episodes yet. Tap <b>+ Add</b> above, or pick a podcast to browse its catalogue.</div>';
-    renderBulkBar();
-    return;
-  }
-  const groups = {};
-  filtered.forEach(ep => {
-    const k = ep.podcast || "doac";
-    (groups[k] = groups[k] || []).push(ep);
-  });
-  const keys = orderedPodKeys().filter(k => groups[k]);
-  const orphans = Object.keys(groups).filter(k => !keys.includes(k));   // episodes whose podcast was removed
-  el.innerHTML = [...keys, ...orphans].map(k => {
-    const p = getPodcast(k);
-    const eps = groups[k];
-    return `<div class="pod-group">
-      <div class="pod-group-header" onclick="setPodFilter('${escAttr(k)}')">
-        ${thumbHtml(k, "sm")}
-        <h3>${esc(p.name)}</h3>
-        <span class="pgh-ct">${eps.length}</span>
-        <span class="pgh-open">Open <i class="ti ti-chevron-right"></i></span>
-      </div>
-      ${suggestionsHtml(k)}
-      <div class="episode-list">${eps.map(epItemHtml).join("")}</div>
-    </div>`;
-  }).join("");
-  renderBulkBar();
-}
-
 let browseScrollY = 0;
 function setBrowseChrome(visible){
-  const d = visible ? "" : "none";
   const sr = document.querySelector("#tab-browse .search-row");
   if (sr) sr.style.display = visible ? "flex" : "none";
   document.getElementById("pod-rail").style.display = visible ? "flex" : "none";
-  document.getElementById("ep-groups").style.display = d;
+  document.getElementById("ep-groups").style.display = visible ? "" : "none";
 }
 
 function openEp(id){
@@ -1618,6 +1411,192 @@ function openEp(id){
   window.scrollTo({ top: 0 });
 }
 
+function closePanel(){
+  curId = null;
+  document.getElementById("panel").style.display = "none";
+  setBrowseChrome(true);
+  renderEpGroups();
+  window.scrollTo({ top: browseScrollY });
+  browseScrollY = 0;
+}
+
+let filterTimer = null;
+function filterEps(){
+  clearTimeout(filterTimer);
+  filterTimer = setTimeout(() => {
+    const q = document.getElementById("search-input").value.toLowerCase().trim();
+    filtered = q
+      ? episodes.filter(e => (e.title + " " + (e.guest||"") + " " + (e.desc||"")).toLowerCase().includes(q))
+      : [...episodes];
+    renderEpGroups();
+  }, 160);
+}
+
+
+
+function epItemHtml(ep, showPod){
+  if (selectMode) {
+    const done = !!summaries[ep.id];
+    const sel = selectedEps.has(ep.id);
+    return `<div class="ep-item ${done?'locked':''} ${sel?'selected':''}" onclick="${done?'':`toggleEpSelect('${escAttr(ep.id)}')`}">
+      <span class="ep-check"><i class="ti ti-check"></i></span>
+      <div class="ep-item-info">
+        ${ep.date ? `<div class="ep-date-sm">${esc(ep.date)}</div>` : ""}
+        <div class="ep-title-sm">${esc(ep.title)}</div>
+        ${done ? '<span class="ep-badge"><i class="ti ti-check"></i> Already generated</span>' : ""}
+      </div>
+    </div>`;
+  }
+  const ready = !!summaries[ep.id];
+  return `<div class="ep-item ${ready?'':'cat'}" onclick="openEp('${escAttr(ep.id)}')">
+    <div class="ep-item-info">
+      <div class="ep-date-sm">${showPod ? `<span class="ep-pod-tag">${esc(getPodcast(ep.podcast).name)}</span>` : ""}${esc(ep.date || "")}</div>
+      <div class="ep-title-sm">${esc(ep.title)}</div>
+      ${ready ? '<span class="ep-badge"><i class="ti ti-check"></i> Breakdown ready</span>' : ""}
+    </div>
+    ${favs.has(ep.id) ? '<i class="ti ti-heart-filled" style="color:var(--danger);font-size:15px;flex-shrink:0"></i>'
+                      : '<i class="ti ti-chevron-right" style="color:var(--text-3);font-size:15px;flex-shrink:0"></i>'}
+  </div>`;
+}
+
+// Podcasts in display order: defaults first, then alphabetical.
+function orderedPodKeys(){
+  const order = ["doac","huberman","hibt"];
+  const keys = Object.keys(PODCASTS);
+  return [
+    ...order.filter(k => keys.includes(k)),
+    ...keys.filter(k => !order.includes(k)).sort((a,b) => getPodcast(a).name.localeCompare(getPodcast(b).name))
+  ];
+}
+
+function setPodFilter(k){
+  podFilter = k;
+  pageFilter = "all";
+  if (selectMode) exitSelectMode(false);
+  browseScrollY = 0;
+  closePanel();
+}
+function setPageFilter(f){
+  pageFilter = f;
+  renderEpGroups();
+}
+
+function renderPodRail(){
+  const el = document.getElementById("pod-rail");
+  if (!el) return;
+  const chips = orderedPodKeys().map(k => {
+    const n = episodes.filter(e => e.podcast === k).length;
+    return `<button class="pod-chip ${podFilter===k?'on':''}" onclick="setPodFilter('${escAttr(k)}')">
+      ${thumbHtml(k, "xs")}<span>${esc(getPodcast(k).name)}</span><span class="pc-ct">${n}</span>
+    </button>`;
+  }).join("");
+  el.innerHTML = `<button class="pod-chip pc-all ${podFilter==='all'?'on':''}" onclick="setPodFilter('all')">All<span class="pc-ct">${episodes.length}</span></button>`
+    + chips
+    + `<button class="pod-chip pc-add" onclick="showAddPodcastModal()" title="Add a podcast"><i class="ti ti-plus"></i></button>`;
+}
+
+function byNewest(a, b){ return (b.ts||0) - (a.ts||0); }
+
+// Episodes visible under the current podcast + search + page filter
+function visibleEps(){
+  let eps = podFilter === "all" ? filtered : filtered.filter(e => (e.podcast || "doac") === podFilter);
+  if (pageFilter === "ready") eps = eps.filter(e => summaries[e.id]);
+  if (pageFilter === "favs")  eps = eps.filter(e => favs.has(e.id));
+  return [...eps].sort(byNewest);
+}
+
+function podHeroHtml(k){
+  const p = getPodcast(k);
+  const hasFeed = !!(p.appleId || p.rssUrl);
+  const podType = getPodType(k);
+  const all = episodes.filter(e => (e.podcast || "doac") === k);
+  const readyCt = all.filter(e => summaries[e.id]).length;
+  const stats = [`${all.length} in catalogue`, `${readyCt} breakdown${readyCt!==1?"s":""}`];
+  return `<div class="pod-hero">
+    <div class="pod-hero-top">
+      ${thumbHtml(k, "md")}
+      <div class="pod-hero-info">
+        <h2>${esc(p.name)}</h2>
+        <div class="pod-hero-stats">${stats.join(" · ")}</div>
+      </div>
+      <span class="pod-type-badge">${PODCAST_TYPES[podType]?.label || podType}</span>
+    </div>
+    <div class="pod-hero-actions">
+      ${hasFeed
+        ? `<button class="btn btn-sm ${p.catAt ? "" : "btn-primary"}" onclick="importFeed('${escAttr(k)}')">
+             <i class="ti ${p.catAt ? "ti-refresh" : "ti-download"}"></i> ${p.catAt ? "Check for new" : "Import catalogue"}
+           </button>`
+        : `<button class="btn btn-sm" onclick="showRssPrompt('${escAttr(k)}')"><i class="ti ti-rss"></i> Add feed</button>`}
+      ${all.some(e => !summaries[e.id])
+        ? `<button class="btn btn-sm" onclick="enterSelectMode()"><i class="ti ti-checkbox"></i> Select</button>` : ""}
+      <span class="check-status" id="check-status-${escAttr(k)}"></span>
+      <button class="icon-btn btn-ml" onclick="deletePodcast('${escAttr(k)}')" title="Remove podcast"><i class="ti ti-trash"></i></button>
+    </div>
+  </div>`;
+}
+
+function podCardHtml(k){
+  const p = getPodcast(k);
+  const all = episodes.filter(e => (e.podcast || "doac") === k);
+  const readyCt = all.filter(e => summaries[e.id]).length;
+  return `<div class="tile pod-card" onclick="setPodFilter('${escAttr(k)}')">
+    <div class="pod-card-art">${thumbHtml(k, "lg")}</div>
+    <div class="tile-title" style="-webkit-line-clamp:2">${esc(p.name)}</div>
+    <div class="tile-foot">${all.length ? `${all.length} eps · ${readyCt} ready` : "Tap to set up"}</div>
+  </div>`;
+}
+
+function renderEpGroups(){
+  renderPodRail();
+  const el = document.getElementById("ep-groups");
+  const q = document.getElementById("search-input").value.trim();
+
+  if (podFilter !== "all" && !PODCASTS[podFilter]) podFilter = "all";
+
+  // ── Single-podcast page
+  if (podFilter !== "all") {
+    const all = episodes.filter(e => (e.podcast || "doac") === podFilter);
+    const readyCt = all.filter(e => summaries[e.id]).length;
+    const favCt = all.filter(e => favs.has(e.id)).length;
+    const eps = visibleEps();
+    const chip = (f, label, n) =>
+      `<button class="pill ${pageFilter===f?'on':''}" onclick="setPageFilter('${f}')">${label} <span class="ct">${n}</span></button>`;
+    el.innerHTML = podHeroHtml(podFilter)
+      + `<div class="pills" style="margin-bottom:0.8rem">
+           ${chip("all","All",all.length)}${chip("ready","Breakdowns",readyCt)}${favCt ? chip("favs","Favourites",favCt) : ""}
+         </div>`
+      + (eps.length
+          ? `<div class="episode-list">${eps.map(e => epItemHtml(e)).join("")}</div>`
+          : `<div class="empty"><i class="ti ti-microphone"></i>${
+              q ? "Nothing matches your search."
+              : pageFilter !== "all" ? "Nothing here yet."
+              : "No episodes yet.<br>Import the catalogue to pull in every episode from the feed."}</div>`);
+    renderBulkBar();
+    return;
+  }
+
+  // ── All view: searching → flat results across every podcast
+  if (q) {
+    const results = visibleEps().slice(0, 100);
+    el.innerHTML = results.length
+      ? `<div class="search-count">${results.length}${results.length===100?"+":""} result${results.length!==1?"s":""} across your catalogues</div>
+         <div class="episode-list">${results.map(e => epItemHtml(e, true)).join("")}</div>`
+      : '<div class="empty"><i class="ti ti-search"></i>No episodes match. Import more catalogues to widen the net.</div>';
+    renderBulkBar();
+    return;
+  }
+
+  // ── All view: podcast dashboard
+  const keys = orderedPodKeys();
+  const orphanKeys = [...new Set(episodes.map(e => e.podcast || "doac"))].filter(k => !PODCASTS[k]);
+  if (!keys.length && !orphanKeys.length) {
+    el.innerHTML = '<div class="empty"><i class="ti ti-microphone"></i>No podcasts yet. Tap <b>+</b> in the row above to add one.</div>';
+  } else {
+    el.innerHTML = `<div class="tile-grid pod-grid">${[...keys, ...orphanKeys].map(podCardHtml).join("")}</div>`;
+  }
+  renderBulkBar();
+}
+
 let lastAddPod = null;   // remembers the last podcast picked in the add form
 function showAddEpModal(){
   renderPodcastSelect();
@@ -1641,6 +1620,7 @@ function addEp(){
   lastAddPod = podKey;
   episodes.unshift({
     id: "ep-" + Date.now(),
+    ts: Date.now(),
     podcast: podKey,
     title: t,
     guest: gm ? gm[1].trim().slice(0,70) : "",
@@ -1697,8 +1677,7 @@ function toggleEpSelect(id){
   renderEpGroups();
 }
 function selectAllVisible(){
-  const pool = (podFilter === "all" ? filtered : filtered.filter(e => (e.podcast||"doac") === podFilter))
-    .filter(e => !summaries[e.id]);
+  const pool = visibleEps().filter(e => !summaries[e.id]);
   for (const ep of pool) {
     if (selectedEps.size >= BULK_CAP) { toast(`Selection capped at ${BULK_CAP} per run`); break; }
     selectedEps.add(ep.id);
@@ -1809,103 +1788,6 @@ async function getFullFeed(podKey){
   const items = parseRssFeed(await proxyFetch(feedUrl));   // no limit — everything
   feedCache[podKey] = { items, fetchedAt: Date.now() };
   return items;
-}
-
-async function openCatalogue(podKey){
-  const pod = getPodcast(podKey);
-  catState = { podKey, items:[], selected:new Set(), q:"" };
-  document.getElementById("cat-title").textContent = pod.name + " — catalogue";
-  document.getElementById("cat-search").value = "";
-  document.getElementById("cat-list").innerHTML = '<div class="cat-loading"><i class="ti ti-loader-2" style="display:inline-block;animation:spin 0.8s linear infinite"></i>&nbsp; Fetching the full feed…</div>';
-  document.getElementById("cat-sub").textContent = "Every episode from the feed that isn't in your list yet.";
-  document.getElementById("catalogue-modal").classList.add("open");
-  renderCatFooter();
-  try {
-    const all = await getFullFeed(podKey);
-    const existing = new Set(episodes.filter(e => e.podcast === podKey).map(e => e.title.toLowerCase().trim()));
-    catState.items = all.filter(fe => !existing.has(fe.title.toLowerCase().trim()));
-    document.getElementById("cat-sub").textContent =
-      `${all.length} episodes in the feed · ${catState.items.length} not in your list yet.`;
-    renderCatList();
-  } catch(e) {
-    document.getElementById("cat-list").innerHTML = `<div class="cat-loading">Couldn't fetch the feed — ${esc(e.message.slice(0,80))}</div>`;
-  }
-}
-function hideCatalogue(){ document.getElementById("catalogue-modal").classList.remove("open"); }
-
-function filterCatalogue(q){ catState.q = q.toLowerCase(); renderCatList(); }
-
-function catVisibleItems(){
-  return catState.q
-    ? catState.items.filter((fe) => (fe.title + " " + fe.guest).toLowerCase().includes(catState.q))
-    : catState.items;
-}
-
-function renderCatList(){
-  const el = document.getElementById("cat-list");
-  const visible = catVisibleItems();
-  if (!visible.length) {
-    el.innerHTML = `<div class="cat-loading">${catState.q ? "Nothing matches your search." : "Everything from this feed is already in your list."}</div>`;
-  } else {
-    el.innerHTML = visible.map(fe => {
-      const i = catState.items.indexOf(fe);
-      const sel = catState.selected.has(i);
-      return `<div class="cat-item ${sel?'selected':''}" onclick="toggleCatItem(${i})">
-        <span class="ep-check ${''}" style="${sel?'background:var(--accent);border-color:var(--accent);color:#fff':''}"><i class="ti ti-check"></i></span>
-        <div class="cat-item-info">
-          <div class="cat-item-title">${esc(fe.title)}</div>
-          ${fe.date ? `<div class="cat-item-date">${esc(fe.date)}</div>` : ""}
-        </div>
-      </div>`;
-    }).join("");
-  }
-  renderCatFooter();
-}
-function toggleCatItem(i){
-  if (catState.selected.has(i)) catState.selected.delete(i);
-  else catState.selected.add(i);
-  renderCatList();
-}
-function renderCatFooter(){
-  const n = catState.selected.size;
-  const addBtn = document.getElementById("cat-add-btn");
-  const genBtn = document.getElementById("cat-gen-btn");
-  addBtn.disabled = !n;
-  genBtn.disabled = !n || n > BULK_CAP;
-  addBtn.innerHTML = `<i class="ti ti-plus"></i> Add${n ? " " + n : ""}`;
-  genBtn.innerHTML = `<i class="ti ti-sparkles"></i> Add &amp; generate${n ? " " + n : ""}`;
-  document.getElementById("cat-count").textContent =
-    n > BULK_CAP ? `Generate is capped at ${BULK_CAP} — add only, or select fewer`
-    : n ? `≈$${(n*BULK_COST_PER_EP).toFixed(2)} to generate` : "";
-}
-
-function catalogueAdd(generate){
-  const podKey = catState.podKey;
-  const picked = [...catState.selected].sort((a,b) => a-b).map(i => catState.items[i]).filter(Boolean);
-  if (!picked.length) return;
-  if (generate && picked.length > BULK_CAP) { toast(`Generate is capped at ${BULK_CAP} per run`); return; }
-  const now = Date.now();
-  const newEps = picked.map((fe, i) => ({
-    id: "ep-" + now + "-c" + i,
-    podcast: podKey,
-    title: fe.title, guest: fe.guest, link: fe.link, desc: fe.desc, date: fe.date
-  }));
-  episodes = [...newEps, ...episodes];
-  saveEpisodes();
-  // Remove any matching pending suggestions so they don't show twice
-  const addedTitles = new Set(picked.map(fe => fe.title.toLowerCase().trim()));
-  if (newEpSuggestions[podKey]) {
-    newEpSuggestions[podKey] = newEpSuggestions[podKey].filter(fe => !addedTitles.has(fe.title.toLowerCase().trim()));
-    saveNewEps();
-  }
-  delete feedCache[podKey];   // stale now
-  filtered = [...episodes];
-  hideCatalogue();
-  podFilter = podKey;
-  renderEpGroups();
-  scheduleSave();
-  if (generate) runBulkQueue(newEps.map(e => e.id));
-  else toast(`${newEps.length} episode${newEps.length>1?"s":""} added`);
 }
 
 /* ════════════════════════════════════════════════════════
@@ -2574,7 +2456,8 @@ async function loadFromSheets(silent){
       const pristineSeeds = episodes.every(e => e.id.startsWith("seed-")) && !Object.keys(summaries).length;
       if (pristineSeeds) episodes = [];
       const haveEp = new Set(episodes.map(e => e.id));
-      const incoming = sheetEps.filter(e => !haveEp.has(e.id));
+      const haveTitle = new Set(episodes.map(e => (e.podcast||"doac") + "|" + normTitle(e.title)));
+      const incoming = sheetEps.filter(e => !haveEp.has(e.id) && !haveTitle.has((e.podcast||"doac") + "|" + normTitle(e.title)));
       episodes = [...episodes, ...incoming];
       saveEpisodes();
     }
