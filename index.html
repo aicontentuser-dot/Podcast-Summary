@@ -2366,7 +2366,12 @@ async function onConnected(){
 }
 
 async function syncAll(){
-  if (!gToken || !SHEET_ID || !workerUrl) return;
+  if (!gToken) {
+    // Work is safe locally, but the person should know it hasn't reached Sheets
+    setSyncStatus("Changes saved on this device only — connect Google to sync", "var(--accent-text)");
+    return;
+  }
+  if (!SHEET_ID || !workerUrl) return;
   setSyncStatus("Syncing…");
   try {
     if (!await ensureSheets()) { setSyncStatus("Sync failed — check Sheet ID", "var(--danger)"); return; }
@@ -2375,7 +2380,10 @@ async function syncAll(){
       pushPlaybook(), pushCollection(), pushNewsDigest()
     ]);
     setSyncStatus("Synced · " + new Date().toLocaleTimeString(), "var(--success-text)");
-  } catch(e) { setSyncStatus("Sync error: " + e.message, "var(--danger)"); }
+  } catch(e) {
+    setSyncStatus("Sync error: " + e.message, "var(--danger)");
+    toast("Sheets push failed — " + e.message.slice(0,80));
+  }
 }
 
 // Sheet 1: Podcasts
@@ -2495,6 +2503,7 @@ async function pushNewsDigest(){
 async function loadFromSheets(silent){
   if (!gToken || !SHEET_ID || !workerUrl) return;
   setSyncStatus("Loading from Sheets…");
+  const pulled = { eps:0, sums:0, sheetSums:0 };
   const epAlias = {};   // sheet episode id → local episode id (same episode, generated on another device)
   const mapEpId = (id) => epAlias[id] || id;
   const mapItemId = (itemId) => {
@@ -2551,13 +2560,16 @@ async function loadFromSheets(silent){
         incoming.push(e);
       });
       episodes = [...episodes, ...incoming];
+      pulled.eps = incoming.length;
       saveEpisodes();
     }
 
     // Summaries — add ones we don't have; local versions win
     if (sumR.length > 1) {
+      pulled.sheetSums = sumR.length - 1;
       sumR.slice(1).map(r => { const m = [...r]; m[0] = mapEpId(r[0]); return m; })
         .filter(r => r[0] && !summaries[r[0]]).forEach(r => {
+        pulled.sums++;
         const splitList = (i) => (r[i]||"").split(FIELD_SEP).filter(Boolean);
         summaries[r[0]] = {
           tags: (r[4]||"").split(", ").filter(Boolean),
@@ -2630,9 +2642,12 @@ async function loadFromSheets(silent){
     filtered = [...episodes];
     renderPodcastSelect(); renderEpGroups(); renderHomeRows(); loadRandom();
     renderColList(); renderPlaybook(); renderWeeklyFocus(); renderNewsDigest();
-    setSyncStatus("Loaded · " + new Date().toLocaleTimeString(), "var(--success-text)");
-    if (!silent) toast("Data loaded from Google Sheets");
-  } catch(e) { setSyncStatus("Load error: " + e.message, "var(--danger)"); }
+    setSyncStatus(`Loaded — sheet has ${pulled.sheetSums} breakdown${pulled.sheetSums!==1?"s":""}, ${pulled.sums} new merged · ` + new Date().toLocaleTimeString(), "var(--success-text)");
+    if (!silent) toast(`Loaded from Sheets — ${pulled.sums} new breakdown${pulled.sums!==1?"s":""}, ${pulled.eps} new episode${pulled.eps!==1?"s":""}`);
+  } catch(e) {
+    setSyncStatus("Load error: " + e.message, "var(--danger)");
+    toast("Sheets load failed — " + e.message.slice(0,80));
+  }
 }
 
 /* ════════════════════════════════════════════════════════
