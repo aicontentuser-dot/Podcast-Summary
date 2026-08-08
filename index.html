@@ -107,26 +107,31 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 /* ════════════════════════════════════════════════════════
    HOME — hero, mini-card rows
    ════════════════════════════════════════════════════════ */
-.hero-card{padding:1.4rem;position:relative;overflow:hidden;}
-.hero-card::before,.summary-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),#e8a872);}
+.summary-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),#e8a872);}
 .hero-meta{display:flex;gap:14px;align-items:flex-start;margin-bottom:1rem;}
-.hero-info{flex:1;min-width:0;}
-.hero-eyebrow{font-size:11px;letter-spacing:0.06em;color:var(--text-3);text-transform:uppercase;font-weight:600;margin-bottom:5px;display:flex;align-items:center;gap:5px;}
-.hero-title{font-size:19px;font-weight:700;line-height:1.3;margin-bottom:5px;letter-spacing:-0.01em;}
-.hero-guest{font-size:13.5px;color:var(--text-2);font-weight:500;margin-bottom:3px;}
-.hero-date{font-size:12px;color:var(--text-3);}
+
+.home-head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:1.1rem;}
+.home-head h2{font-size:20px;font-weight:800;letter-spacing:-0.02em;}
+.home-stats{font-size:12px;color:var(--text-3);margin-top:3px;}
 
 .row-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;margin-top:1.4rem;}
 .row-header h2{font-size:14px;font-weight:700;}
 .row-scroll{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;}
 .row-scroll::-webkit-scrollbar{display:none;}
-.mini-card{padding:0.85rem;min-width:200px;max-width:200px;cursor:pointer;transition:all 0.12s;flex-shrink:0;}
-.mini-card:hover{border-color:var(--border-strong);transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.07);}
-.mini-card .mc-title{font-size:13px;font-weight:600;line-height:1.35;margin-bottom:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-.mini-card .mc-guest{font-size:11.5px;color:var(--text-2);}
-.mini-card .mc-badge{font-size:10px;color:var(--success-text);background:var(--success-bg);padding:2px 7px;border-radius:100px;margin-top:6px;display:inline-flex;align-items:center;gap:3px;font-weight:600;}
-.mc-thumb-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
-.mc-pod-name{font-size:11px;color:var(--text-3);}
+/* Library tiles */
+.tile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:0.9rem;cursor:pointer;display:flex;flex-direction:column;gap:8px;transition:all 0.12s;}
+.tile:hover{border-color:var(--border-strong);transform:translateY(-2px);box-shadow:0 4px 14px rgba(0,0,0,0.07);}
+.tile-pod{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text-3);min-width:0;}
+.tile-pod span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tile-title{font-size:13px;font-weight:600;line-height:1.4;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;flex:1;}
+.tile-foot{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-3);}
+.tile-foot .ti-heart-filled{color:var(--danger);font-size:13px;margin-left:auto;}
+
+/* Reader mode back control */
+.reader-back{display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--text-2);font-size:13px;font-weight:600;cursor:pointer;padding:4px 10px 4px 0;margin-bottom:0.7rem;}
+.reader-back:hover{color:var(--text);}
+.reader-back i{font-size:16px;}
 
 /* Generate CTA + errors */
 .gen-cta{text-align:center;padding:1.6rem 1rem;}
@@ -425,41 +430,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 
 <!-- ══ HOME ═══════════════════════════════════════════ -->
 <div class="section visible" id="tab-home">
-  <div class="card hero-card">
-    <div class="hero-meta">
-      <div id="hero-thumb" style="width:72px;height:72px;border-radius:14px;background:var(--surface-3);flex-shrink:0"></div>
-      <div class="hero-info">
-        <div class="hero-eyebrow"><i class="ti ti-dice-5"></i> Random pick</div>
-        <div class="hero-title" id="home-title">—</div>
-        <div class="hero-guest" id="home-guest"></div>
-        <div class="hero-date" id="home-date"></div>
-      </div>
+  <div class="home-head">
+    <div>
+      <h2>Your library</h2>
+      <div class="home-stats" id="home-stats"></div>
     </div>
-    <div class="divider" style="margin-top:0"></div>
-    <div id="home-cta">
-      <div class="gen-cta">
-        <i class="ti ti-sparkles big"></i>
-        <p>Generate a breakdown — summary, key ideas, action steps, best quotes and a 5-min read.</p>
-        <button class="btn btn-primary" id="home-gen-btn" onclick="generate('home')"><i class="ti ti-sparkles"></i> Generate breakdown</button>
-        <div id="home-error"></div>
-      </div>
-    </div>
-    <div id="home-result" style="display:none"></div>
-    <div class="action-row" id="home-action-row" style="display:none">
-      <button class="btn btn-fav" id="home-fav-btn" onclick="toggleFav('home')"><i class="ti ti-heart" id="home-fav-icon"></i><span id="home-fav-label">Save</span></button>
-      <a class="btn btn-listen" id="home-listen-btn" href="#" target="_blank" rel="noopener" style="display:none"><i class="ti ti-headphones"></i> Listen</a>
-      <button class="btn btn-ml" onclick="loadRandom()"><i class="ti ti-refresh"></i> Shuffle</button>
-    </div>
-  </div>
-
-  <div id="home-recent-section" style="display:none">
-    <div class="row-header"><h2>Recently generated</h2></div>
-    <div class="row-scroll" id="home-recent"></div>
+    <button class="btn btn-sm" onclick="surpriseMe()"><i class="ti ti-dice-5"></i> Surprise me</button>
   </div>
 
   <div id="home-favs-section" style="display:none">
-    <div class="row-header"><h2>Your favourites</h2></div>
-    <div class="row-scroll" id="home-favs"></div>
+    <div class="row-header" style="margin-top:0.4rem"><h2>Favourites</h2></div>
+    <div class="tile-grid" id="home-favs"></div>
+  </div>
+
+  <div id="home-ready-section" style="display:none">
+    <div class="row-header"><h2>All breakdowns</h2></div>
+    <div class="tile-grid" id="home-ready"></div>
+  </div>
+
+  <div class="empty" id="home-empty" style="display:none">
+    <i class="ti ti-sparkles"></i>No breakdowns yet.<br>
+    Head to <b>Episodes</b>, pick something interesting, and generate your first.
   </div>
 </div>
 
@@ -477,6 +468,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
   <div id="ep-groups"></div>
 
   <div class="card summary-panel" id="panel" style="display:none">
+    <button class="reader-back" onclick="closePanel()"><i class="ti ti-arrow-left"></i> Back to episodes</button>
     <div class="hero-meta" style="margin-bottom:0.75rem">
       <div id="panel-thumb" style="width:56px;height:56px;border-radius:12px;background:var(--surface-3);flex-shrink:0"></div>
       <div style="flex:1;min-width:0">
@@ -1359,58 +1351,62 @@ function resetPanel(prefix){
   const btn = document.getElementById(prefix + "-gen-btn");
   btn.disabled = false;
   btn.innerHTML = '<i class="ti ti-sparkles"></i> Generate breakdown';
-  if (prefix === "home") document.getElementById("home-action-row").style.display = "none";
 }
 
 // Re-render whichever open views show this episode (keeps save buttons in sync)
 function refreshOpenBreakdowns(epId){
   const ep = episodes.find(e => e.id === epId);
   if (!ep || !summaries[epId]) return;
-  if (homeId === epId) renderBreakdown("home", summaries[epId], ep);
-  if (curId === epId)  renderBreakdown("panel", summaries[epId], ep);
+  if (curId === epId) renderBreakdown("panel", summaries[epId], ep);
 }
 
 /* ════════════════════════════════════════════════════════
    10. HOME TAB
    ════════════════════════════════════════════════════════ */
-function loadRandom(){
-  if (!episodes.length) return;
-  const ep = episodes[Math.floor(Math.random()*episodes.length)];
-  homeId = ep.id;
-  document.getElementById("home-title").textContent = ep.title;
-  document.getElementById("home-guest").textContent = ep.guest || "";
-  document.getElementById("home-date").textContent = ep.date || "";
-  const heroEl = document.getElementById("hero-thumb");
-  if (heroEl) heroEl.outerHTML = thumbHtml(ep.podcast, "lg", "hero-thumb");
-  resetPanel("home");
-  const lb = document.getElementById("home-listen-btn");
-  lb.style.display = ep.link ? "inline-flex" : "none";
-  if (ep.link) lb.href = ep.link;
-  if (summaries[ep.id]) renderBreakdown("home", summaries[ep.id], ep);
-  updateFavBtn("home", ep.id);
-  renderHomeRows();
-}
-
-function miniCard(ep){
+function tileHtml(ep){
   const p = getPodcast(ep.podcast);
-  return `<div class="card mini-card" onclick="openEpFromHome('${escAttr(ep.id)}')">
-    <div class="mc-thumb-row">${thumbHtml(ep.podcast, "sm")}<span class="mc-pod-name">${esc(p.name)}</span></div>
-    <div class="mc-title">${esc(ep.title)}</div>
-    <div class="mc-guest">${esc(ep.guest || "")}</div>
-    ${summaries[ep.id] ? '<span class="mc-badge"><i class="ti ti-check"></i> Ready</span>' : ''}
+  return `<div class="tile" onclick="openEpFromHome('${escAttr(ep.id)}')">
+    <div class="tile-pod">${thumbHtml(ep.podcast, "xs")}<span>${esc(p.name)}</span></div>
+    <div class="tile-title">${esc(ep.title)}</div>
+    <div class="tile-foot">
+      ${ep.date ? `<span>${esc(ep.date)}</span>` : ""}
+      ${favs.has(ep.id) ? '<i class="ti ti-heart-filled"></i>' : ""}
+    </div>
   </div>`;
 }
 
 function renderHomeRows(){
-  const recent = episodes.filter(e => summaries[e.id]).slice(0,10);
-  const rs = document.getElementById("home-recent-section");
-  rs.style.display = recent.length ? "block" : "none";
-  if (recent.length) document.getElementById("home-recent").innerHTML = recent.map(miniCard).join("");
+  const ready = episodes.filter(e => summaries[e.id]);
+  const favEps = ready.filter(e => favs.has(e.id));
 
-  const favEps = episodes.filter(e => favs.has(e.id));
+  const stats = [];
+  if (ready.length) stats.push(`${ready.length} breakdown${ready.length!==1?"s":""}`);
+  if (favEps.length) stats.push(`${favEps.length} favourite${favEps.length!==1?"s":""}`);
+  const podCt = new Set(episodes.map(e => e.podcast || "doac")).size;
+  if (episodes.length) stats.push(`${podCt} podcast${podCt!==1?"s":""}`);
+  document.getElementById("home-stats").textContent = stats.join(" · ") || "Nothing here yet";
+
   const fs = document.getElementById("home-favs-section");
   fs.style.display = favEps.length ? "block" : "none";
-  if (favEps.length) document.getElementById("home-favs").innerHTML = favEps.map(miniCard).join("");
+  if (favEps.length) document.getElementById("home-favs").innerHTML = favEps.map(tileHtml).join("");
+
+  const others = favEps.length ? ready.filter(e => !favs.has(e.id)) : ready;
+  const rs = document.getElementById("home-ready-section");
+  rs.style.display = others.length ? "block" : "none";
+  if (others.length) document.getElementById("home-ready").innerHTML = others.map(tileHtml).join("");
+
+  document.getElementById("home-empty").style.display = ready.length ? "none" : "block";
+}
+
+// Kept as an alias — several flows call loadRandom() to refresh the home view
+function loadRandom(){ renderHomeRows(); }
+
+function surpriseMe(){
+  const ready = episodes.filter(e => summaries[e.id]);
+  const pool = ready.length ? ready : episodes;
+  if (!pool.length) { toast("Add some episodes first"); return; }
+  const ep = pool[Math.floor(Math.random()*pool.length)];
+  openEpFromHome(ep.id);
 }
 
 function openEpFromHome(id){ showTab("browse"); openEp(id); }
@@ -1485,14 +1481,17 @@ function orderedPodKeys(){
 function closePanel(){
   curId = null;
   document.getElementById("panel").style.display = "none";
+  setBrowseChrome(true);
+  renderEpGroups();
+  window.scrollTo({ top: browseScrollY });
+  browseScrollY = 0;
 }
 
 function setPodFilter(k){
   podFilter = k;
   if (selectMode) exitSelectMode(false);
+  browseScrollY = 0;
   closePanel();
-  renderEpGroups();
-  window.scrollTo({ top: 0 });
 }
 
 function renderPodRail(){
@@ -1587,11 +1586,22 @@ function renderEpGroups(){
   renderBulkBar();
 }
 
+let browseScrollY = 0;
+function setBrowseChrome(visible){
+  const d = visible ? "" : "none";
+  const sr = document.querySelector("#tab-browse .search-row");
+  if (sr) sr.style.display = visible ? "flex" : "none";
+  document.getElementById("pod-rail").style.display = visible ? "flex" : "none";
+  document.getElementById("ep-groups").style.display = d;
+}
+
 function openEp(id){
   const ep = episodes.find(e => e.id === id);
   if (!ep) return;
   curId = id;
-  renderEpGroups();
+  browseScrollY = window.scrollY;
+  setBrowseChrome(false);
+  renderBulkBar();
   const panel = document.getElementById("panel");
   panel.style.display = "block";
   document.getElementById("panel-title").textContent = ep.title;
@@ -1605,7 +1615,7 @@ function openEp(id){
   if (ep.link) lb.href = ep.link;
   if (summaries[ep.id]) renderBreakdown("panel", summaries[ep.id], ep);
   updateFavBtn("panel", ep.id);
-  panel.scrollIntoView({ behavior:"smooth", block:"nearest" });
+  window.scrollTo({ top: 0 });
 }
 
 let lastAddPod = null;   // remembers the last podcast picked in the add form
@@ -1653,9 +1663,9 @@ function deleteEp(){
   favs.delete(curId);
   saveEpisodes(); saveSummaries(); saveFavs();
   filtered = [...episodes];
-  document.getElementById("panel").style.display = "none";
-  curId = null;
-  renderEpGroups(); renderHomeRows();
+  browseScrollY = 0;
+  closePanel();
+  renderHomeRows();
   toast("Episode deleted");
   scheduleSave();
 }
