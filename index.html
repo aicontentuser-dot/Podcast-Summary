@@ -79,6 +79,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 
 .section{display:none;}.section.visible{display:block;}
 
+.toast-btn{margin-left:10px;background:var(--accent);border:none;color:#fff;font-weight:700;font-size:12px;padding:5px 12px;border-radius:100px;cursor:pointer;}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 20px;border-radius:100px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:opacity 0.2s;z-index:999;box-shadow:0 4px 16px rgba(0,0,0,0.2);white-space:nowrap;}
 .toast.show{opacity:1;}
 
@@ -121,6 +122,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);}
 .divider{border:none;border-top:1px solid var(--border);margin:1.1rem 0;}
 .tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:0.9rem;}
+.tag-btn{cursor:pointer;border:none;font-family:inherit;transition:all 0.12s;}
+.tag-btn:hover{background:var(--accent-bg);color:var(--accent-text);}
 .tag{font-size:11.5px;padding:3px 10px;border-radius:100px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-2);font-weight:500;}
 .empty{text-align:center;padding:3rem 1rem;color:var(--text-3);font-size:14px;line-height:1.7;}
 .empty i{font-size:30px;display:block;margin-bottom:10px;}
@@ -145,6 +148,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .row-header h2{font-size:14px;font-weight:700;}
 .row-scroll{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;}
 .row-scroll::-webkit-scrollbar{display:none;}
+/* Today blocks */
+.today-sec{margin-bottom:1.4rem;}
+.today-h{font-size:11px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-3);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.today-h i{font-size:14px;}
+.today-h .th-btn{margin-left:auto;background:none;border:none;color:var(--text-3);cursor:pointer;font-size:15px;padding:2px;}
+.today-h .th-btn:hover{color:var(--text);}
+.act-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:0.8rem 1rem;display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:6px;transition:all 0.12s;}
+.act-item:hover{border-color:var(--border-strong);}
+.act-info{flex:1;min-width:0;}
+.act-text{font-size:13px;font-weight:600;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.act-meta{font-size:11px;color:var(--text-3);margin-top:3px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.act-stale{color:var(--accent-text);font-weight:600;}
+.act-status{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;padding:2px 8px;border-radius:100px;background:var(--surface-2);color:var(--text-2);flex-shrink:0;}
+.act-status.doing{background:var(--accent-bg);color:var(--accent-text);}
+.revisit-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:1rem 1.1rem;}
+.revisit-text{font-size:14px;line-height:1.55;margin-bottom:8px;}
+.revisit-src{font-size:11.5px;color:var(--text-3);}
+.revisit-actions{display:flex;gap:6px;margin-top:10px;}
+
 /* Library tiles */
 .tile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
 .tile{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:0.9rem;cursor:pointer;display:flex;flex-direction:column;gap:8px;transition:all 0.12s;}
@@ -154,6 +176,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .tile-title{font-size:13px;font-weight:600;line-height:1.4;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;flex:1;}
 .tile-foot{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-3);}
 .tile-foot .ti-heart-filled{color:var(--danger);font-size:13px;margin-left:auto;}
+
+/* Personal note */
+.note-wrap{margin:1.1rem 0 0.4rem;position:relative;}
+.note-label{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;}
+.note-box{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font:inherit;font-size:13.5px;line-height:1.5;color:var(--text);resize:vertical;min-height:56px;}
+.note-box:focus{outline:none;border-color:var(--accent);}
+.note-saved{position:absolute;right:2px;top:0;font-size:10.5px;color:var(--success-text);opacity:0;transition:opacity 0.25s;}
+.note-saved.show{opacity:1;}
 
 /* Reader mode back control */
 .reader-back{display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--text-2);font-size:13px;font-weight:600;cursor:pointer;padding:4px 10px 4px 0;margin-bottom:0.7rem;}
@@ -435,11 +465,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 <div class="section visible" id="tab-home">
   <div class="home-head">
     <div>
-      <h2>Your library</h2>
+      <h2 id="home-greeting">Today</h2>
       <div class="home-stats" id="home-stats"></div>
     </div>
     <button class="btn btn-sm" onclick="surpriseMe()"><i class="ti ti-dice-5"></i> Surprise me</button>
   </div>
+
+  <div id="today-act"></div>
+  <div id="today-revisit"></div>
+  <div id="today-new"></div>
 
   <div id="home-favs-section" style="display:none">
     <div class="row-header" style="margin-top:0.4rem"><h2>Favourites</h2></div>
@@ -447,7 +481,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
   </div>
 
   <div id="home-ready-section" style="display:none">
-    <div class="row-header"><h2>All breakdowns</h2></div>
+    <div class="row-header"><h2>Library</h2></div>
     <div class="tile-grid" id="home-ready"></div>
   </div>
 
@@ -490,6 +524,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
       </div>
     </div>
     <div id="panel-result" style="display:none"></div>
+    <div class="note-wrap">
+      <label class="note-label" for="panel-note"><i class="ti ti-pencil"></i> My note — how will I apply this?</label>
+      <textarea id="panel-note" class="note-box" rows="2" placeholder="In my own words…" oninput="noteChanged()"></textarea>
+      <span class="note-saved" id="note-saved">Saved</span>
+    </div>
     <div class="action-row" id="panel-action-row">
       <button class="btn btn-fav" id="panel-fav-btn" onclick="toggleFav('panel')"><i class="ti ti-heart" id="panel-fav-icon"></i><span id="panel-fav-label">Save</span></button>
       <a class="btn btn-listen" id="panel-listen-btn" href="#" target="_blank" rel="noopener" style="display:none"><i class="ti ti-headphones"></i> Listen</a>
@@ -771,6 +810,7 @@ let PODCASTS  = load("doac-podcasts-v1", DEFAULT_PODCASTS);
 Object.entries(DEFAULT_PODCASTS).forEach(([k,v]) => { if(!PODCASTS[k]) PODCASTS[k] = v; });
 
 let episodes  = load("doac-eps-v3", SEED);
+let notes = load("doac-notes-v1", {});   // { epId: "personal note" }
 
 // Older episodes predate publish-timestamps — derive ts from their date string
 // so they sort correctly among catalogue rows instead of sinking to the bottom
@@ -832,6 +872,7 @@ const BULK_COST_PER_EP = 0.03;         // rough estimate shown in the bar
 function savePodcasts(){ save("doac-podcasts-v1", PODCASTS); }
 function saveEpisodes(){ save("doac-eps-v3", episodes); }
 function saveSummaries(){ save("doac-sums-v3", summaries); }
+function saveNotes(){ save("doac-notes-v1", notes); }
 function saveFavs(){ save("doac-favs-v3", [...favs]); }
 function saveCol(){ save("doac-col-v3", col); }
 function savePb(){ save("doac-pb-v1", pbItems); }
@@ -842,7 +883,20 @@ function saveNews(){ save("doac-news-v1", newsItems); }
    ════════════════════════════════════════════════════════ */
 function esc(s){ const d = document.createElement("div"); d.textContent = s ?? ""; return d.innerHTML; }
 function escAttr(s){ return String(s ?? "").replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/"/g,"&quot;").replace(/\n/g," "); }
-function toast(msg){ const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"), 2200); }
+let toastTimer = null, toastAction = null;
+function toast(msg, actionLabel, actionFn, ms){
+  const t = document.getElementById("toast");
+  toastAction = actionFn || null;
+  t.innerHTML = esc(msg) + (actionLabel ? ` <button class="toast-btn" onclick="runToastAction()">${esc(actionLabel)}</button>` : "");
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ t.classList.remove("show"); toastAction = null; }, ms || (actionLabel ? 6000 : 2200));
+}
+function runToastAction(){
+  if (toastAction) toastAction();
+  toastAction = null;
+  document.getElementById("toast").classList.remove("show");
+}
 function extractJson(raw){
   const t = raw.replace(/```json|```/g,"").trim();
   const a = t.indexOf("{"), b = t.lastIndexOf("}");
@@ -1058,23 +1112,39 @@ function deletePodcast(key){
   const pod = getPodcast(key);
   const epIds = episodes.filter(e => e.podcast === key).map(e => e.id);
   const msg = epIds.length
-    ? `Remove "${pod.name}" and its ${epIds.length} episode${epIds.length>1?"s":""}? This cannot be undone.`
+    ? `Remove "${pod.name}" and its ${epIds.length} episode${epIds.length>1?"s":""}?`
     : `Remove "${pod.name}"?`;
   if (!confirm(msg)) return;
+  const stash = {
+    key, pod: { ...PODCASTS[key] },
+    eps: episodes.filter(e => e.podcast === key),
+    sums: Object.fromEntries(epIds.filter(id => summaries[id]).map(id => [id, summaries[id]])),
+    favIds: epIds.filter(id => favs.has(id))
+  };
   delete PODCASTS[key];
   episodes = episodes.filter(e => e.podcast !== key);
   epIds.forEach(id => { delete summaries[id]; favs.delete(id); });
   savePodcasts(); saveEpisodes(); saveSummaries(); saveFavs();
   filtered = [...episodes];
-  if (podFilter === key) podFilter = "all";
+  if (podFilter === key) { podFilter = "all"; silentUnwind(); }
   delete feedCache[key];
   if (curId && epIds.includes(curId)) {
     curId = null;
     document.getElementById("panel").style.display = "none";
+    setBrowseChrome(true);
   }
   renderPodcastSelect(); renderEpGroups(); renderHomeRows();
   scheduleSave();
-  toast(`"${pod.name}" removed`);
+  toast(`"${pod.name}" removed`, "Undo", () => {
+    PODCASTS[stash.key] = stash.pod;
+    episodes = [...stash.eps, ...episodes];
+    Object.assign(summaries, stash.sums);
+    stash.favIds.forEach(id => favs.add(id));
+    savePodcasts(); saveEpisodes(); saveSummaries(); saveFavs();
+    filtered = [...episodes];
+    renderPodcastSelect(); renderEpGroups(); renderHomeRows();
+    scheduleSave();
+  });
 }
 function showRssPrompt(podKey){
   const pod = getPodcast(podKey);
@@ -1229,6 +1299,7 @@ async function generate(prefix){
   try {
     const d = await callAI(ep);
     summaries[id] = d;
+    invalidateBlob(id);
     saveSummaries();
     renderBreakdown(prefix, d, ep);
     renderEpGroups();
@@ -1321,7 +1392,7 @@ function renderBreakdown(prefix, d, ep){
     html += '</div>';
   });
   html += '</div>';
-  if (d.tags?.length) html += '<div class="tags">' + d.tags.map(t => `<span class="tag">${esc(t)}</span>`).join("") + '</div>';
+  if (d.tags?.length) html += '<div class="tags">' + d.tags.map(t => `<button class="tag tag-btn" onclick="searchByTag('${escAttr(t)}')" title="Find everything about ${escAttr(t)}">${esc(t)}</button>`).join("") + '</div>';
   html += '</div>';
 
   // 5-min read pane
@@ -1391,7 +1462,86 @@ function tileHtml(ep){
   </div>`;
 }
 
+let revisitPick = null;   // session-stable pick for the Revisit card
+function shuffleRevisit(){ revisitPick = null; renderHomeRows(); }
+
+function daysSince(iso){
+  const t = Date.parse(iso || "");
+  return isNaN(t) ? null : Math.floor((Date.now() - t) / 86400000);
+}
+
+function renderToday(){
+  const h = new Date().getHours();
+  document.getElementById("home-greeting").textContent =
+    h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+  // ── Act on it: open Playbook commitments, stalest first
+  const open = pbItems.filter(p => p.status === "todo" || p.status === "doing")
+    .map(p => ({ ...p, age: daysSince(p.addedAt) }))
+    .sort((a,b) => (b.status==="doing") - (a.status==="doing") || (b.age||0) - (a.age||0))
+    .slice(0, 3);
+  document.getElementById("today-act").innerHTML = open.length ? `
+    <div class="today-sec">
+      <div class="today-h"><i class="ti ti-target-arrow"></i> Act on it
+        <button class="th-btn" onclick="showTab('playbook')" title="Open Playbook"><i class="ti ti-arrow-right"></i></button>
+      </div>
+      ${open.map(p => `
+        <div class="act-item" onclick="showTab('playbook')">
+          <div class="act-info">
+            <div class="act-text">${esc(p.action || p.text)}</div>
+            <div class="act-meta">
+              <span>${esc(p.sourceTitle || "")}</span>
+              ${p.age != null && p.age >= 14 ? `<span class="act-stale">open ${p.age}d — finish or drop it?</span>` : ""}
+            </div>
+          </div>
+          <span class="act-status ${p.status}">${p.status}</span>
+        </div>`).join("")}
+    </div>` : "";
+
+  // ── Revisit: one saved insight resurfaced
+  const rEl = document.getElementById("today-revisit");
+  if (!col.length) { rEl.innerHTML = ""; }
+  else {
+    if (!revisitPick || !col.find(c => c.itemId === revisitPick)) {
+      revisitPick = col[Math.floor(Math.random() * col.length)].itemId;
+    }
+    const item = col.find(c => c.itemId === revisitPick);
+    const srcEp = episodes.find(e => e.id === item.sourceEpId);
+    rEl.innerHTML = `
+      <div class="today-sec">
+        <div class="today-h"><i class="ti ti-refresh-dot"></i> Revisit
+          <button class="th-btn" onclick="shuffleRevisit()" title="Show another"><i class="ti ti-arrows-shuffle"></i></button>
+        </div>
+        <div class="revisit-card">
+          <div class="revisit-text">${esc(item.text)}</div>
+          <div class="revisit-src">${esc(item.typeLabel || "")}${item.sourceTitle ? " · " + esc(item.sourceTitle) : ""}</div>
+          <div class="revisit-actions">
+            ${srcEp ? `<button class="btn btn-sm" onclick="openEpFromHome('${escAttr(srcEp.id)}')"><i class="ti ti-player-play"></i> Open episode</button>` : ""}
+            <button class="btn btn-sm" onclick="showTab('collection')"><i class="ti ti-bookmarks"></i> Collection</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // ── New this week: fresh episodes without breakdowns
+  const weekAgo = Date.now() - 7 * 86400000;
+  const freshEps = episodes.filter(e => !summaries[e.id] && (e.ts || 0) >= weekAgo)
+    .sort(byNewest).slice(0, 4);
+  document.getElementById("today-new").innerHTML = freshEps.length ? `
+    <div class="today-sec">
+      <div class="today-h"><i class="ti ti-sparkles"></i> New this week</div>
+      ${freshEps.map(e => `
+        <div class="act-item" onclick="openEpFromHome('${escAttr(e.id)}')">
+          <div class="act-info">
+            <div class="act-meta" style="margin:0 0 3px">${thumbHtml(e.podcast,"xs")} <span>${esc(getPodcast(e.podcast).name)}</span> · <span>${esc(e.date||"")}</span></div>
+            <div class="act-text">${esc(e.title)}</div>
+          </div>
+          <i class="ti ti-chevron-right" style="color:var(--text-3)"></i>
+        </div>`).join("")}
+    </div>` : "";
+}
+
 function renderHomeRows(){
+  renderToday();
   const ready = episodes.filter(e => summaries[e.id]);
   const favEps = ready.filter(e => favs.has(e.id));
 
@@ -1425,11 +1575,40 @@ function surpriseMe(){
   openEpFromHome(ep.id);
 }
 
-function openEpFromHome(id){ showTab("browse"); openEp(id); }
+function openEpFromHome(id){
+  readerReturnTab = currentTab !== "browse" ? currentTab : null;
+  showTab("browse");
+  openEp(id);
+}
 
 /* ════════════════════════════════════════════════════════
    11. EPISODES TAB — search, groups, panel
    ════════════════════════════════════════════════════════ */
+// ── Browser/Android back button: closes the reader, then leaves the podcast
+// page, before ever exiting the app.
+let pushedReader = false, pushedPod = false, ignorePop = 0, readerReturnTab = null;
+function silentUnwind(){
+  const n = (pushedReader?1:0) + (pushedPod?1:0);
+  pushedReader = pushedPod = false;
+  if (n) { ignorePop++; history.go(-n); }
+}
+window.addEventListener("popstate", () => {
+  if (ignorePop > 0) { ignorePop--; return; }
+  if (pushedReader) {
+    pushedReader = false;
+    closePanelNow();
+    if (readerReturnTab) { const t = readerReturnTab; readerReturnTab = null; showTab(t); }
+    return;
+  }
+  if (pushedPod) {
+    pushedPod = false;
+    podFilter = "all"; pageFilter = "all";
+    if (selectMode) exitSelectMode(false);
+    closePanelNow();
+    window.scrollTo({ top: 0 });
+  }
+});
+
 let browseScrollY = 0;
 function setBrowseChrome(visible){
   const sr = document.querySelector("#tab-browse .search-row");
@@ -1442,6 +1621,7 @@ function openEp(id){
   const ep = episodes.find(e => e.id === id);
   if (!ep) return;
   curId = id;
+  if (!pushedReader) { history.pushState({ app:"reader" }, ""); pushedReader = true; }
   browseScrollY = window.scrollY;
   setBrowseChrome(false);
   renderBulkBar();
@@ -1457,11 +1637,32 @@ function openEp(id){
   lb.style.display = ep.link ? "inline-flex" : "none";
   if (ep.link) lb.href = ep.link;
   if (summaries[ep.id]) renderBreakdown("panel", summaries[ep.id], ep);
+  document.getElementById("panel-note").value = notes[ep.id] || "";
   updateFavBtn("panel", ep.id);
   window.scrollTo({ top: 0 });
 }
 
+let noteTimer = null;
+function noteChanged(){
+  if (!curId) return;
+  const id = curId;
+  clearTimeout(noteTimer);
+  noteTimer = setTimeout(() => {
+    const v = document.getElementById("panel-note").value.trim();
+    if (v) notes[id] = v; else delete notes[id];
+    saveNotes();
+    scheduleSave();
+    const badge = document.getElementById("note-saved");
+    badge.classList.add("show");
+    setTimeout(() => badge.classList.remove("show"), 1200);
+  }, 600);
+}
+
 function closePanel(){
+  if (pushedReader) { history.back(); return; }   // popstate does the actual close
+  closePanelNow();
+}
+function closePanelNow(){
   curId = null;
   document.getElementById("panel").style.display = "none";
   setBrowseChrome(true);
@@ -1470,16 +1671,50 @@ function closePanel(){
   browseScrollY = 0;
 }
 
+// Search covers titles AND the generated breakdown text (cached per episode)
+let blobCache = {};
+function epBlob(e){
+  if (blobCache[e.id] === undefined) {
+    let t = e.title + " " + (e.guest||"") + " " + (e.desc||"");
+    const d = summaries[e.id];
+    if (d) {
+      t += " " + [
+        (d.tags||[]).join(" "), d.executive_summary, d.core_concept, d.the_story,
+        d.one_minute_recap, d.five_min_read,
+        ...(d.key_ideas||[]), ...(d.action_steps||[]), ...(d.best_quotes||[]),
+        ...(d.science_behind||[]), ...(d.practical_protocol||[]), ...(d.myths_debunked||[]),
+        ...(d.key_decisions||[]), ...(d.lessons_learned||[]), ...(d.quick_context||[]),
+        ...(d.what_to_watch||[]),
+        ...(d.top_stories||[]).map(st => (st.headline||"") + " " + (st.why||""))
+      ].filter(Boolean).join(" ");
+    }
+    blobCache[e.id] = t.toLowerCase();
+  }
+  return blobCache[e.id];
+}
+function invalidateBlob(id){ if (id) delete blobCache[id]; else blobCache = {}; }
+
 let filterTimer = null;
 function filterEps(){
   clearTimeout(filterTimer);
-  filterTimer = setTimeout(() => {
-    const q = document.getElementById("search-input").value.toLowerCase().trim();
-    filtered = q
-      ? episodes.filter(e => (e.title + " " + (e.guest||"") + " " + (e.desc||"")).toLowerCase().includes(q))
-      : [...episodes];
-    renderEpGroups();
-  }, 160);
+  filterTimer = setTimeout(() => filterNow(document.getElementById("search-input").value), 160);
+}
+function filterNow(qRaw){
+  const q = (qRaw||"").toLowerCase().trim();
+  filtered = q ? episodes.filter(e => epBlob(e).includes(q)) : [...episodes];
+  renderEpGroups();
+}
+
+// Tag chips in breakdowns jump to a cross-catalogue search for that topic
+function searchByTag(tag){
+  readerReturnTab = null;
+  if (pushedReader) { pushedReader = false; ignorePop++; history.back(); }
+  closePanelNow();
+  if (podFilter !== "all") setPodFilter("all");
+  showTab("browse");
+  document.getElementById("search-input").value = tag;
+  filterNow(tag);
+  window.scrollTo({ top: 0 });
 }
 
 
@@ -1520,11 +1755,14 @@ function orderedPodKeys(){
 }
 
 function setPodFilter(k){
+  if (k === "all" && pushedPod && !pushedReader) { history.back(); return; }   // symmetric with system back
   podFilter = k;
   pageFilter = "all";
   if (selectMode) exitSelectMode(false);
   browseScrollY = 0;
-  closePanel();
+  if (pushedReader) { pushedReader = false; ignorePop++; history.back(); }
+  closePanelNow();
+  if (k !== "all" && !pushedPod) { history.pushState({ app:"pod" }, ""); pushedPod = true; }
 }
 function setPageFilter(f){
   pageFilter = f;
@@ -1687,17 +1925,32 @@ function addEp(){
 }
 
 function deleteEp(){
-  if (!curId || !confirm("Delete this episode and its breakdown?")) return;
-  episodes = episodes.filter(e => e.id !== curId);
-  delete summaries[curId];
-  favs.delete(curId);
+  if (!curId) return;
+  const id = curId;
+  const idx = episodes.findIndex(e => e.id === id);
+  const stash = { ep: episodes[idx], idx, sum: summaries[id], fav: favs.has(id), note: notes[id] };
+  episodes = episodes.filter(e => e.id !== id);
+  delete summaries[id];
+  delete notes[id];
+  favs.delete(id);
+  saveNotes();
   saveEpisodes(); saveSummaries(); saveFavs();
   filtered = [...episodes];
   browseScrollY = 0;
-  closePanel();
+  if (pushedReader) { pushedReader = false; ignorePop++; history.back(); }
+  closePanelNow();
   renderHomeRows();
-  toast("Episode deleted");
   scheduleSave();
+  toast("Episode deleted", "Undo", () => {
+    episodes.splice(Math.min(stash.idx, episodes.length), 0, stash.ep);
+    if (stash.sum) summaries[id] = stash.sum;
+    if (stash.note) { notes[id] = stash.note; saveNotes(); }
+    if (stash.fav) favs.add(id);
+    saveEpisodes(); saveSummaries(); saveFavs();
+    filtered = [...episodes];
+    renderEpGroups(); renderHomeRows();
+    scheduleSave();
+  });
 }
 
 /* ════════════════════════════════════════════════════════
@@ -1807,6 +2060,7 @@ async function runBulkQueue(ids){
       try {
         const d = await callAI(ep);
         summaries[id] = d;
+        invalidateBlob(id);
         saveSummaries();
         ok++;
       } catch(e) {
@@ -2212,7 +2466,7 @@ function exportData(){
     favs: [...favs],
     col,
     podcasts: PODCASTS,
-    pbItems, newsItems
+    pbItems, newsItems, notes
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type:"application/json" });
   const a = document.createElement("a");
@@ -2238,6 +2492,8 @@ function importData(e){
       if (d.podcasts)  { PODCASTS = d.podcasts; Object.entries(DEFAULT_PODCASTS).forEach(([k,v]) => { if(!PODCASTS[k]) PODCASTS[k]=v; }); savePodcasts(); }
       if (d.pbItems)   { pbItems = d.pbItems; savePb(); }
       if (d.newsItems) { newsItems = d.newsItems; saveNews(); }
+      if (d.notes)     { notes = d.notes; saveNotes(); }
+      invalidateBlob();
       saveEpisodes(); saveSummaries(); saveFavs(); saveCol();
       filtered = [...episodes];
       renderPodcastSelect(); renderEpGroups(); renderHomeRows(); loadRandom();
@@ -2333,7 +2589,7 @@ async function sheetsReq(method, path, body){
   return data;
 }
 
-const SHEET_NAMES = ["Podcasts","Episodes","Summaries","Playbook","Collection","News Digest"];
+const SHEET_NAMES = ["Podcasts","Episodes","Summaries","Playbook","Collection","News Digest","Notes"];
 
 async function ensureSheets(){
   const meta = await sheetsReq("GET", "", null);
@@ -2377,13 +2633,24 @@ async function syncAll(){
     if (!await ensureSheets()) { setSyncStatus("Sync failed — check Sheet ID", "var(--danger)"); return; }
     await Promise.all([
       pushPodcasts(), pushEpisodes(), pushSummaries(),
-      pushPlaybook(), pushCollection(), pushNewsDigest()
+      pushPlaybook(), pushCollection(), pushNewsDigest(), pushNotes()
     ]);
     setSyncStatus("Synced · " + new Date().toLocaleTimeString(), "var(--success-text)");
   } catch(e) {
     setSyncStatus("Sync error: " + e.message, "var(--danger)");
     toast("Sheets push failed — " + e.message.slice(0,80));
   }
+}
+
+// Sheet 7: Notes
+async function pushNotes(){
+  const rows = [["Episode ID","Episode Title","Note","Updated"]];
+  Object.entries(notes).forEach(([id, note]) => {
+    if (!note) return;
+    const ep = episodes.find(e => e.id === id);
+    rows.push([id, ep ? ep.title : "", note, new Date().toISOString().slice(0,10)]);
+  });
+  await writeSheet("Notes", rows);
 }
 
 // Sheet 1: Podcasts
@@ -2520,6 +2787,7 @@ async function loadFromSheets(silent){
       readSheet("Collection"),
       readSheet("News Digest").catch(()=>[])
     ]);
+    const noteR = await readSheet("Notes").catch(()=>[]);
 
     // Podcasts — merge onto existing so gradients/abbrs are kept
     if (podR.length > 1) {
@@ -2591,6 +2859,7 @@ async function loadFromSheets(silent){
           five_min_read: r[20]||""
         };
       });
+      invalidateBlob();
       saveSummaries();
     }
 
@@ -2639,6 +2908,15 @@ async function loadFromSheets(silent){
       saveNews();
     }
 
+    if (noteR.length > 1) {
+      let added = 0;
+      noteR.slice(1).filter(r => r[0] && r[2]).forEach(r => {
+        const key = mapEpId(r[0]);
+        if (!notes[key]) { notes[key] = r[2]; added++; }
+      });
+      if (added) saveNotes();
+    }
+
     filtered = [...episodes];
     renderPodcastSelect(); renderEpGroups(); renderHomeRows(); loadRandom();
     renderColList(); renderPlaybook(); renderWeeklyFocus(); renderNewsDigest();
@@ -2654,6 +2932,7 @@ async function loadFromSheets(silent){
    19. NAV + BOOT
    ════════════════════════════════════════════════════════ */
 function showTab(name){
+  if (name !== "browse") silentUnwind();
   currentTab = name;
   document.querySelectorAll(".section").forEach(s => s.classList.remove("visible"));
   document.getElementById("tab-" + name).classList.add("visible");
