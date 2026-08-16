@@ -79,6 +79,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 
 .section{display:none;}.section.visible{display:block;}
 
+/* Saved tab */
+.pills-sub{margin:-0.2rem 0 0.8rem;}
+.pill.pill-sm{font-size:11px;padding:4px 10px;}
+.pill.area-pill.on{border-color:transparent;}
+.pill-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;border:none;padding:0;position:relative;}
+.pill-dot::after{content:'';position:absolute;inset:0;border-radius:50%;background:currentColor;}
+.saved-group{margin-bottom:1.4rem;}
+.saved-group-h{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;padding:4px 12px;border-radius:100px;margin-bottom:9px;}
+.saved-group-h .sg-ct{opacity:0.7;font-weight:600;}
+.saved-card-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+.saved-card-top .col-type{margin:0;}
+.saved-x{margin-left:auto;}
+
+/* Sync panel v2 */
+.sync-panel{display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap;padding:0.9rem 1.1rem;margin-top:1.6rem;}
+.sync-left{display:flex;align-items:center;gap:10px;min-width:0;}
+.sync-dot{width:9px;height:9px;border-radius:50%;background:var(--text-3);flex-shrink:0;box-shadow:0 0 0 3px color-mix(in srgb, currentColor 15%, transparent);}
+.sync-title{font-size:12.5px;font-weight:700;}
+.sync-status{font-size:11.5px;color:var(--text-3);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:52vw;}
+.sync-btns{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+
 .toast-btn{margin-left:10px;background:var(--accent);border:none;color:#fff;font-weight:700;font-size:12px;padding:5px 12px;border-radius:100px;cursor:pointer;}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 20px;border-radius:100px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:opacity 0.2s;z-index:999;box-shadow:0 4px 16px rgba(0,0,0,0.2);white-space:nowrap;}
 .toast.show{opacity:1;}
@@ -150,6 +171,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .row-scroll::-webkit-scrollbar{display:none;}
 /* Today blocks */
 .today-sec{margin-bottom:1.4rem;}
+@media(min-width:940px){
+  .today-duo{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+  .today-duo .today-sec{margin-bottom:1.6rem;}
+}
+.act-area{font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;display:inline-flex;align-items:center;gap:4px;}
 .today-h{font-size:11px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-3);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
 .today-h i{font-size:14px;}
 .today-h .th-btn{margin-left:auto;background:none;border:none;color:var(--text-3);cursor:pointer;font-size:15px;padding:2px;}
@@ -456,8 +482,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 <div class="nav" id="nav">
   <button class="active" data-tab="home" onclick="showTab('home')"><i class="ti ti-layout-grid"></i><span>Home</span></button>
   <button data-tab="browse" onclick="showTab('browse')"><i class="ti ti-microphone"></i><span>Episodes</span></button>
-  <button data-tab="collection" onclick="showTab('collection')"><i class="ti ti-bookmarks"></i><span>Collection</span></button>
-  <button data-tab="playbook" onclick="showTab('playbook')"><i class="ti ti-target-arrow"></i><span>Playbook</span></button>
+  <button data-tab="saved" onclick="showTab('saved')"><i class="ti ti-bookmarks"></i><span>Saved</span></button>
   <button data-tab="news" onclick="showTab('news')"><i class="ti ti-news"></i><span>News</span></button>
 </div>
 
@@ -471,8 +496,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
     <button class="btn btn-sm" onclick="surpriseMe()"><i class="ti ti-dice-5"></i> Surprise me</button>
   </div>
 
-  <div id="today-act"></div>
-  <div id="today-revisit"></div>
+  <div class="today-duo">
+    <div id="today-act"></div>
+    <div id="today-revisit"></div>
+  </div>
   <div id="today-new"></div>
 
   <div id="home-favs-section" style="display:none">
@@ -538,30 +565,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 </div>
 
 <!-- ══ COLLECTION ═════════════════════════════════════ -->
-<div class="section" id="tab-collection">
-  <div class="card sync-panel">
-    <div class="sync-row">
-      <div style="flex:1;min-width:0">
-        <div class="sync-title"><i class="ti ti-brand-google"></i> Google Sheets sync</div>
-        <div class="sync-status" id="sync-status">Not connected — auto-saves all data to your Sheet</div>
-      </div>
-      <button id="sync-signin-btn" class="btn btn-sm btn-google" onclick="signInGoogle()"><i class="ti ti-brand-google"></i> Connect Google</button>
-      <button id="sync-now-btn" class="btn btn-sm" onclick="syncAll()" style="display:none"><i class="ti ti-refresh"></i> Sync now</button>
-      <button id="sync-load-btn" class="btn btn-sm" onclick="loadFromSheets()"><i class="ti ti-cloud-download"></i> Load from Sheets</button>
-      <button id="sync-signout-btn" class="btn btn-sm" onclick="signOutGoogle()" style="display:none"><i class="ti ti-logout"></i> Sign out</button>
-    </div>
-  </div>
-  <div class="pills" id="pills"></div>
-  <div id="col-list"></div>
-  <div class="action-row" style="margin-top:1.2rem">
-    <button class="btn" onclick="exportData()"><i class="ti ti-download"></i> Export data</button>
-    <button class="btn" onclick="document.getElementById('import-input').click()"><i class="ti ti-upload"></i> Import data</button>
-    <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(event)"/>
-  </div>
-</div>
-
-<!-- ══ PLAYBOOK ═══════════════════════════════════════ -->
-<div class="section" id="tab-playbook">
+<div class="section" id="tab-saved">
   <div id="weekly-focus-section" style="margin-bottom:1.2rem">
     <div class="section-head">
       <i class="ti ti-calendar-week"></i> This week's focus
@@ -569,8 +573,35 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
     </div>
     <div class="row-scroll" id="weekly-focus-row"></div>
   </div>
-  <div class="pills" id="playbook-pills"></div>
-  <div id="playbook-list"></div>
+
+  <div class="search-wrap" style="margin-bottom:0.7rem">
+    <i class="ti ti-search"></i>
+    <input type="text" id="saved-search" placeholder="Search everything you've saved…" oninput="renderSaved()"/>
+  </div>
+  <div class="pills" id="saved-area-pills"></div>
+  <div class="pills pills-sub" id="saved-status-pills"></div>
+  <div id="saved-list"></div>
+
+  <div class="card sync-panel">
+    <div class="sync-left">
+      <span class="sync-dot" id="sync-dot"></span>
+      <div style="min-width:0">
+        <div class="sync-title">Google Sheets</div>
+        <div class="sync-status" id="sync-status">Not connected</div>
+      </div>
+    </div>
+    <div class="sync-btns">
+      <button id="sync-signin-btn" class="btn btn-sm btn-primary" onclick="signInGoogle()"><i class="ti ti-plug-connected"></i> Connect</button>
+      <button id="sync-now-btn" class="btn btn-sm" onclick="syncAll()" style="display:none"><i class="ti ti-refresh"></i> Sync</button>
+      <button id="sync-load-btn" class="btn btn-sm" onclick="loadFromSheets()" title="Pull from Sheets"><i class="ti ti-cloud-download"></i></button>
+      <button id="sync-signout-btn" class="icon-btn" onclick="signOutGoogle()" style="display:none" title="Sign out"><i class="ti ti-logout"></i></button>
+    </div>
+  </div>
+  <div class="action-row" style="margin-top:0.8rem">
+    <button class="btn btn-sm" onclick="exportData()"><i class="ti ti-download"></i> Export</button>
+    <button class="btn btn-sm" onclick="document.getElementById('import-input').click()"><i class="ti ti-upload"></i> Import</button>
+    <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(event)"/>
+  </div>
 </div>
 
 <!-- ══ NEWS DIGEST ════════════════════════════════════ -->
@@ -1482,19 +1513,21 @@ function renderToday(){
   document.getElementById("today-act").innerHTML = open.length ? `
     <div class="today-sec">
       <div class="today-h"><i class="ti ti-target-arrow"></i> Act on it
-        <button class="th-btn" onclick="showTab('playbook')" title="Open Playbook"><i class="ti ti-arrow-right"></i></button>
+        <button class="th-btn" onclick="showTab('saved')" title="Open Saved"><i class="ti ti-arrow-right"></i></button>
       </div>
-      ${open.map(p => `
-        <div class="act-item" onclick="showTab('playbook')">
+      ${open.map(p => {
+        const a = LIFE_AREAS[p.area] || LIFE_AREAS.other;
+        return `
+        <div class="act-item" onclick="showTab('saved')">
           <div class="act-info">
             <div class="act-text">${esc(p.action || p.text)}</div>
             <div class="act-meta">
-              <span>${esc(p.sourceTitle || "")}</span>
+              <span class="act-area ${a.colorCls}"><i class="ti ${a.icon}"></i> ${a.label}</span>
               ${p.age != null && p.age >= 14 ? `<span class="act-stale">open ${p.age}d — finish or drop it?</span>` : ""}
             </div>
           </div>
           <span class="act-status ${p.status}">${p.status}</span>
-        </div>`).join("")}
+        </div>`;}).join("")}
     </div>` : "";
 
   // ── Revisit: one saved insight resurfaced
@@ -1506,17 +1539,20 @@ function renderToday(){
     }
     const item = col.find(c => c.itemId === revisitPick);
     const srcEp = episodes.find(e => e.id === item.sourceEpId);
+    const pbi = pbItems.find(p => p.itemId === item.itemId);
+    const rArea = pbi ? (LIFE_AREAS[pbi.area] || LIFE_AREAS.other) : null;
     rEl.innerHTML = `
       <div class="today-sec">
         <div class="today-h"><i class="ti ti-refresh-dot"></i> Revisit
           <button class="th-btn" onclick="shuffleRevisit()" title="Show another"><i class="ti ti-arrows-shuffle"></i></button>
         </div>
         <div class="revisit-card">
+          ${rArea ? `<span class="act-area ${rArea.colorCls}" style="margin-bottom:8px"><i class="ti ${rArea.icon}"></i> ${rArea.label}</span>` : ""}
           <div class="revisit-text">${esc(item.text)}</div>
           <div class="revisit-src">${esc(item.typeLabel || "")}${item.sourceTitle ? " · " + esc(item.sourceTitle) : ""}</div>
           <div class="revisit-actions">
             ${srcEp ? `<button class="btn btn-sm" onclick="openEpFromHome('${escAttr(srcEp.id)}')"><i class="ti ti-player-play"></i> Open episode</button>` : ""}
-            <button class="btn btn-sm" onclick="showTab('collection')"><i class="ti ti-bookmarks"></i> Collection</button>
+            <button class="btn btn-sm" onclick="showTab('saved')"><i class="ti ti-bookmarks"></i> Saved</button>
           </div>
         </div>
       </div>`;
@@ -1550,6 +1586,8 @@ function renderHomeRows(){
   if (favEps.length) stats.push(`${favEps.length} favourite${favEps.length!==1?"s":""}`);
   const podCt = new Set(episodes.map(e => e.podcast || "doac")).size;
   if (episodes.length) stats.push(`${podCt} podcast${podCt!==1?"s":""}`);
+  const openCt = pbItems.filter(p => p.status === "todo" || p.status === "doing").length;
+  if (openCt) stats.push(`${openCt} to act on`);
   document.getElementById("home-stats").textContent = stats.join(" · ") || "Nothing here yet";
 
   const fs = document.getElementById("home-favs-section");
@@ -1586,21 +1624,24 @@ function openEpFromHome(id){
    ════════════════════════════════════════════════════════ */
 // ── Browser/Android back button: closes the reader, then leaves the podcast
 // page, before ever exiting the app.
-let pushedReader = false, pushedPod = false, ignorePop = 0, readerReturnTab = null;
+let pushedReader = false, pushedPod = false, ignorePop = 0, readerReturnTab = null, backInFlight = false;
+try { history.replaceState({ app:"root" }, ""); } catch(e){}
 function silentUnwind(){
   const n = (pushedReader?1:0) + (pushedPod?1:0);
   pushedReader = pushedPod = false;
   if (n) { ignorePop++; history.go(-n); }
 }
 window.addEventListener("popstate", () => {
+  backInFlight = false;
   if (ignorePop > 0) { ignorePop--; return; }
-  if (pushedReader) {
+  // Decide from the ACTUAL UI, not just flags — survives reloads and races
+  if (curId) {
     pushedReader = false;
     closePanelNow();
     if (readerReturnTab) { const t = readerReturnTab; readerReturnTab = null; showTab(t); }
     return;
   }
-  if (pushedPod) {
+  if (currentTab === "browse" && podFilter !== "all") {
     pushedPod = false;
     podFilter = "all"; pageFilter = "all";
     if (selectMode) exitSelectMode(false);
@@ -1659,7 +1700,12 @@ function noteChanged(){
 }
 
 function closePanel(){
-  if (pushedReader) { history.back(); return; }   // popstate does the actual close
+  if (pushedReader) {
+    if (backInFlight) return;   // double-tap guard: one back at a time
+    backInFlight = true;
+    history.back();             // popstate does the actual close
+    return;
+  }
   closePanelNow();
 }
 function closePanelNow(){
@@ -1755,7 +1801,12 @@ function orderedPodKeys(){
 }
 
 function setPodFilter(k){
-  if (k === "all" && pushedPod && !pushedReader) { history.back(); return; }   // symmetric with system back
+  if (k === "all" && pushedPod && !pushedReader) {
+    if (backInFlight) return;
+    backInFlight = true;
+    history.back();
+    return;
+  }
   podFilter = k;
   pageFilter = "all";
   if (selectMode) exitSelectMode(false);
@@ -2147,7 +2198,7 @@ function saveItem(epId, secKey, idx){
       pbItems.unshift({ ...colItem, area:"other", action:"", status:"todo", addedAt:new Date().toISOString() });
       savePb();
       renderPlaybook(); renderWeeklyFocus();
-      toast("Saving to Playbook…");
+      toast("Saved — generating your action…");
       enrichAndSaveToPlaybook(colItem);
     }
   }
@@ -2169,41 +2220,108 @@ function removeColItem(itemId){
 /* ════════════════════════════════════════════════════════
    14. COLLECTION TAB
    ════════════════════════════════════════════════════════ */
-function setFilter(f){ colFilter = f; renderColList(); }
+let savedArea = "all", savedStatus = "all";
+function setSavedArea(a){ savedArea = a; renderSaved(); }
+function setSavedStatus(st){ savedStatus = savedStatus === st ? "all" : st; renderSaved(); }
 
-function renderPills(){
-  const counts = {};
-  col.forEach(c => counts[c.type] = (counts[c.type] || 0) + 1);
-  const usedKeys = [...new Set(col.map(c => c.type))];
-  let h = `<button class="pill ${colFilter==="all"?"on":""}" onclick="setFilter('all')">All <span class="ct">${col.length}</span></button>`;
-  usedKeys.forEach(key => {
-    const m = sectionMeta(key);
-    h += `<button class="pill ${colFilter===key?"on":""}" onclick="setFilter('${key}')"><i class="ti ${m.icon}"></i> ${esc(m.title)} <span class="ct">${counts[key]}</span></button>`;
+// One unified view over col (saved items) + pbItems (their action/status layer)
+function savedItems(){
+  const pbById = new Map(pbItems.map(p => [p.itemId, p]));
+  return col.map(c => {
+    const p = pbById.get(c.itemId);
+    return { ...c, area: p?.area || null, action: p?.action || "", status: p?.status || null, addedAt: p?.addedAt || "" };
   });
-  document.getElementById("pills").innerHTML = h;
 }
 
-function renderColList(){
-  renderPills();
-  const el = document.getElementById("col-list");
-  const items = colFilter === "all" ? col : col.filter(c => c.type === colFilter);
+function savedCardHtml(item){
+  const m = sectionMeta(item.type);
+  const area = item.area ? (LIFE_AREAS[item.area] || LIFE_AREAS.other) : null;
+  const text = item.type === "best_quotes" ? `"${esc(item.text)}"` : esc(item.text);
+  const statusBtns = item.status !== null ? STATUSES.map(st =>
+    `<button class="status-btn ${item.status===st.key?'active-'+st.key:''}" onclick="setStatus('${escAttr(item.itemId)}','${st.key}')">${st.label}</button>`
+  ).join("") : "";
+  return `<div class="card pb-card">
+    <div class="saved-card-top">
+      ${area ? `<span class="pb-area-tag ${area.colorCls}"><i class="ti ${area.icon}"></i> ${area.label}</span>` : ""}
+      <span class="col-type"><i class="ti ${m.icon}"></i> ${esc(item.typeLabel)}</span>
+      <button class="icon-btn saved-x" onclick="removeSavedItem('${escAttr(item.itemId)}')" title="Remove"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="pb-insight">${text}</div>
+    ${item.action
+      ? `<div class="pb-action-label"><i class="ti ti-arrow-right"></i> Your action</div><div class="pb-action">${esc(item.action)}</div>`
+      : item.status !== null ? `<div class="pb-action loading">Generating your action commitment…</div>` : ""}
+    <div class="pb-footer">
+      <div class="pb-source"><i class="ti ti-microphone"></i> ${esc(item.sourceTitle || "")}</div>
+      ${item.sourceEpId && episodes.find(e => e.id === item.sourceEpId)
+        ? `<button class="chip-btn" onclick="openEpFromHome('${escAttr(item.sourceEpId)}')"><i class="ti ti-player-play"></i> Episode</button>` : ""}
+    </div>
+    ${statusBtns ? `<div class="status-btns">${statusBtns}</div>` : ""}
+  </div>`;
+}
+
+function renderSaved(){
+  const all = savedItems();
+  const q = (document.getElementById("saved-search")?.value || "").toLowerCase().trim();
+
+  // Area pills — coloured when active
+  const counts = {};
+  all.forEach(i => { const k = i.area || "other"; counts[k] = (counts[k]||0) + 1; });
+  let ph = `<button class="pill ${savedArea==="all"?"on":""}" onclick="setSavedArea('all')">All <span class="ct">${all.length}</span></button>`;
+  Object.keys(LIFE_AREAS).filter(k => counts[k]).forEach(k => {
+    const a = LIFE_AREAS[k];
+    ph += `<button class="pill area-pill ${savedArea===k ? "on "+a.colorCls : ""}" onclick="setSavedArea('${k}')"><span class="pill-dot ${a.colorCls}"></span> ${a.label} <span class="ct">${counts[k]}</span></button>`;
+  });
+  document.getElementById("saved-area-pills").innerHTML = ph;
+
+  // Status pills (secondary)
+  const stCounts = {};
+  all.forEach(i => { if (i.status) stCounts[i.status] = (stCounts[i.status]||0)+1; });
+  document.getElementById("saved-status-pills").innerHTML = STATUSES.filter(st => stCounts[st.key]).map(st =>
+    `<button class="pill pill-sm ${savedStatus===st.key?"on":""}" onclick="setSavedStatus('${st.key}')">${st.label} <span class="ct">${stCounts[st.key]}</span></button>`
+  ).join("");
+
+  // Filter
+  let items = all;
+  if (savedArea !== "all") items = items.filter(i => (i.area || "other") === savedArea);
+  if (savedStatus !== "all") items = items.filter(i => i.status === savedStatus);
+  if (q) items = items.filter(i => (i.text + " " + (i.action||"") + " " + (i.sourceTitle||"")).toLowerCase().includes(q));
+
+  const el = document.getElementById("saved-list");
   if (!items.length) {
-    el.innerHTML = '<div class="empty"><i class="ti ti-bookmark"></i>Nothing saved yet.<br>Generate a breakdown and tap + on any item.</div>';
+    el.innerHTML = `<div class="empty"><i class="ti ti-bookmark"></i>${all.length
+      ? "Nothing matches these filters."
+      : "Nothing saved yet.<br>Generate a breakdown and tap + on any insight — it lands here, organised by life area."}</div>`;
     return;
   }
-  el.innerHTML = items.map(item => {
-    const m = sectionMeta(item.type);
-    const text = item.type === "best_quotes" ? `"${esc(item.text)}"` : esc(item.text);
-    return `<div class="card col-item">
-      <div class="col-item-body">
-        <div class="col-type"><i class="ti ${m.icon}"></i> ${esc(item.typeLabel)}</div>
-        <div class="col-text">${text}</div>
-        <div class="col-src"><i class="ti ti-microphone"></i> ${esc(item.sourceTitle)}</div>
-      </div>
-      <button class="icon-btn" onclick="removeColItem('${escAttr(item.itemId)}')"><i class="ti ti-x"></i></button>
-    </div>`;
-  }).join("");
+
+  // Grouped by area when unfiltered — the categorised view
+  if (savedArea === "all" && !q && savedStatus === "all") {
+    const groups = {};
+    items.forEach(i => { const k = i.area || "other"; (groups[k] = groups[k] || []).push(i); });
+    el.innerHTML = Object.keys(LIFE_AREAS).filter(k => groups[k]).map(k => {
+      const a = LIFE_AREAS[k];
+      return `<div class="saved-group">
+        <div class="saved-group-h ${a.colorCls}"><i class="ti ${a.icon}"></i> ${a.label} <span class="sg-ct">${groups[k].length}</span></div>
+        ${groups[k].map(savedCardHtml).join("")}
+      </div>`;
+    }).join("");
+  } else {
+    el.innerHTML = items.map(savedCardHtml).join("");
+  }
 }
+
+// Compatibility aliases — many flows still call these names
+function renderColList(){ if (currentTab === "saved") renderSaved(); }
+function renderPills(){}
+function removeSavedItem(itemId){
+  col = col.filter(c => c.itemId !== itemId);
+  pbItems = pbItems.filter(p => p.itemId !== itemId);
+  saveCol(); savePb();
+  refreshOpenBreakdowns(itemId.split("::")[0]);
+  renderSaved(); renderWeeklyFocus(); renderHomeRows();
+  scheduleSave();
+}
+function removeColItem(itemId){ removeSavedItem(itemId); }
 
 /* ════════════════════════════════════════════════════════
    15. PLAYBOOK — enrichment, statuses, weekly focus
@@ -2249,58 +2367,16 @@ function removeFromPlaybook(itemId){
   saveCol();
   renderPlaybook(); renderWeeklyFocus(); renderColList();
   refreshOpenBreakdowns(itemId.split("::")[0]);
-  toast("Removed from Playbook");
+  toast("Removed");
   scheduleSave();
 }
 
 function setStatus(itemId, status){
   const item = pbItems.find(p => p.itemId === itemId);
-  if (item) { item.status = status; savePb(); renderPlaybook(); scheduleSave(); }
+  if (item) { item.status = status; savePb(); renderSaved(); renderHomeRows(); scheduleSave(); }
 }
 
-function setPbFilter(f){ pbFilter = f; renderPlaybook(); }
-
-function renderPlaybookPills(){
-  const counts = {};
-  pbItems.forEach(p => { counts[p.area] = (counts[p.area] || 0) + 1; });
-  let h = `<button class="pill ${pbFilter==="all"?"on":""}" onclick="setPbFilter('all')">All <span class="ct">${pbItems.length}</span></button>`;
-  Object.keys(LIFE_AREAS).filter(k => counts[k]).forEach(k => {
-    const a = LIFE_AREAS[k];
-    h += `<button class="pill ${pbFilter===k?"on":""}" onclick="setPbFilter('${k}')"><i class="ti ${a.icon}"></i> ${a.label} <span class="ct">${counts[k]}</span></button>`;
-  });
-  document.getElementById("playbook-pills").innerHTML = h;
-}
-
-function renderPlaybook(){
-  renderPlaybookPills();
-  const el = document.getElementById("playbook-list");
-  const items = pbFilter === "all" ? pbItems : pbItems.filter(p => p.area === pbFilter);
-  if (!items.length) {
-    el.innerHTML = `<div class="empty"><i class="ti ti-plant-2"></i>${pbItems.length
-      ? "No items in this area yet."
-      : "Nothing in your Playbook yet.<br>Save any insight from a breakdown and it'll appear here with an action commitment."}</div>`;
-    return;
-  }
-  el.innerHTML = items.map(item => {
-    const area = LIFE_AREAS[item.area] || LIFE_AREAS.other;
-    const statusBtns = STATUSES.map(s =>
-      `<button class="status-btn ${item.status===s.key?'active-'+s.key:''}" onclick="setStatus('${escAttr(item.itemId)}','${s.key}')">${s.label}</button>`
-    ).join("");
-    const actionHtml = item.action
-      ? `<div class="pb-action-label"><i class="ti ti-arrow-right"></i> Your action</div><div class="pb-action">${esc(item.action)}</div>`
-      : `<div class="pb-action loading">Generating your action commitment…</div>`;
-    return `<div class="card pb-card">
-      <div class="pb-area-tag ${area.colorCls}"><i class="ti ${area.icon}"></i> ${area.label}</div>
-      <div class="pb-insight">${esc(item.text)}</div>
-      ${actionHtml}
-      <div class="pb-footer">
-        <div class="pb-source"><i class="ti ti-microphone"></i> ${esc(item.sourceTitle || "")}</div>
-        <button class="icon-btn" style="font-size:13px" onclick="removeFromPlaybook('${escAttr(item.itemId)}')" title="Remove"><i class="ti ti-x"></i></button>
-      </div>
-      <div class="status-btns">${statusBtns}</div>
-    </div>`;
-  }).join("");
-}
+function renderPlaybook(){ if (currentTab === "saved") renderSaved(); }
 
 // ── Weekly focus — one random not-done item per life area
 function refreshWeeklyFocus(){
@@ -2497,7 +2573,7 @@ function importData(e){
       saveEpisodes(); saveSummaries(); saveFavs(); saveCol();
       filtered = [...episodes];
       renderPodcastSelect(); renderEpGroups(); renderHomeRows(); loadRandom();
-      renderColList(); renderPlaybook(); renderWeeklyFocus(); renderNewsDigest();
+      renderSaved(); renderWeeklyFocus(); renderNewsDigest();
       toast("Data imported");
     } catch { toast("Couldn't read that file"); }
   };
@@ -2571,6 +2647,8 @@ function setSyncStatus(text, color){
   const s = document.getElementById("sync-status");
   s.textContent = text;
   s.style.color = color || "var(--text-3)";
+  const dot = document.getElementById("sync-dot");
+  if (dot) { dot.style.background = color || "var(--text-3)"; dot.style.color = color || "var(--text-3)"; }
 }
 
 async function sheetsReq(method, path, body){
@@ -2919,7 +2997,7 @@ async function loadFromSheets(silent){
 
     filtered = [...episodes];
     renderPodcastSelect(); renderEpGroups(); renderHomeRows(); loadRandom();
-    renderColList(); renderPlaybook(); renderWeeklyFocus(); renderNewsDigest();
+    renderSaved(); renderWeeklyFocus(); renderNewsDigest();
     setSyncStatus(`Loaded — sheet has ${pulled.sheetSums} breakdown${pulled.sheetSums!==1?"s":""}, ${pulled.sums} new merged · ` + new Date().toLocaleTimeString(), "var(--success-text)");
     if (!silent) toast(`Loaded from Sheets — ${pulled.sums} new breakdown${pulled.sums!==1?"s":""}, ${pulled.eps} new episode${pulled.eps!==1?"s":""}`);
   } catch(e) {
@@ -2932,14 +3010,14 @@ async function loadFromSheets(silent){
    19. NAV + BOOT
    ════════════════════════════════════════════════════════ */
 function showTab(name){
+  if (name === "collection" || name === "playbook") name = "saved";
   if (name !== "browse") silentUnwind();
   currentTab = name;
   document.querySelectorAll(".section").forEach(s => s.classList.remove("visible"));
   document.getElementById("tab-" + name).classList.add("visible");
   document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
   if (name === "browse")     { filtered = [...episodes]; renderEpGroups(); }
-  if (name === "collection")   renderColList();
-  if (name === "playbook")   { renderPlaybook(); renderWeeklyFocus(); }
+  if (name === "saved")      { renderSaved(); renderWeeklyFocus(); }
   if (name === "news")         renderNewsDigest();
   renderBulkBar();
 }
