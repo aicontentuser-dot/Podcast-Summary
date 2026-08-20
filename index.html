@@ -96,7 +96,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .ai-provider-row{display:flex;align-items:center;gap:10px;margin-top:0.8rem;padding:0.7rem 1.1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);}
 .ai-label{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;flex:1;}
 .seg{display:flex;background:var(--surface-2);border-radius:100px;padding:3px;}
-.seg button{border:none;background:none;font:inherit;font-size:12px;font-weight:600;color:var(--text-2);padding:5px 14px;border-radius:100px;cursor:pointer;}
+.seg button{border:none;background:none;font:inherit;font-size:11.5px;font-weight:600;color:var(--text-2);padding:5px 10px;border-radius:100px;cursor:pointer;white-space:nowrap;}
 .seg button.on{background:var(--surface);color:var(--text);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,0.1);}
 
 /* Sync panel v2 */
@@ -707,19 +707,25 @@ const GOOGLE_CLIENT_ID = "371519774048-9b6kv5i0boda3ja70frkbai5ql98gdv6.apps.goo
 const SHEET_ID = "1qJcczUSmh-PJo0J-hgHJHx4s7kIigQIEEFVitreSTs0";
 const AI_MODEL = "claude-sonnet-4-6";
 let aiProvider = localStorage.getItem("ai-provider") || "claude";
+if (aiProvider === "gemini") aiProvider = "gemini-flash";   // migrate old value
+const AI_ENGINES = {
+  "claude":       { label:"Claude",       provider:"claude" },
+  "gemini-flash": { label:"Gemini Flash", provider:"gemini", model:"gemini-2.5-flash" },
+  "gemini-pro":   { label:"Gemini Pro",   provider:"gemini", model:"gemini-2.5-pro" },
+};
 function setAiProvider(p){
   aiProvider = p;
   localStorage.setItem("ai-provider", p);
   renderAiProviderUI();
-  toast(p === "gemini" ? "Breakdowns will use Gemini (needs GEMINI_API_KEY on your worker)" : "Breakdowns will use Claude");
+  toast(p === "claude" ? "Breakdowns will use Claude"
+    : `Breakdowns will use ${AI_ENGINES[p].label} (needs GEMINI_API_KEY on your worker)`);
 }
 function renderAiProviderUI(){
   const el = document.getElementById("ai-provider-row");
   if (!el) return;
   el.innerHTML = `<span class="ai-label"><i class="ti ti-sparkles"></i> AI engine</span>
-    <div class="seg">
-      <button class="${aiProvider==="claude"?"on":""}" onclick="setAiProvider('claude')">Claude</button>
-      <button class="${aiProvider==="gemini"?"on":""}" onclick="setAiProvider('gemini')">Gemini</button>
+    <div class="seg">${Object.entries(AI_ENGINES).map(([k,e]) =>
+      `<button class="${aiProvider===k?"on":""}" onclick="setAiProvider('${k}')">${e.label}</button>`).join("")}
     </div>`;
 }
 
@@ -1067,7 +1073,12 @@ async function aiRequest(prompt, maxTokens){
     res = await fetch(workerUrl + "/ai", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ provider:aiProvider, model:AI_MODEL, max_tokens:maxTokens, messages:[{ role:"user", content:prompt }] }),
+      body: JSON.stringify({
+        provider: (AI_ENGINES[aiProvider] || AI_ENGINES.claude).provider,
+        gemini_model: (AI_ENGINES[aiProvider] || {}).model,
+        model: AI_MODEL, max_tokens: maxTokens,
+        messages: [{ role:"user", content:prompt }]
+      }),
       signal: ctrl.signal
     });
   } catch(e) {
