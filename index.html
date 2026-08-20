@@ -176,6 +176,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .row-header h2{font-size:14px;font-weight:700;}
 .row-scroll{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;}
 .row-scroll::-webkit-scrollbar{display:none;}
+/* Ask your library */
+.ask-box{display:flex;gap:8px;align-items:center;margin-bottom:1.1rem;}
+.ask-answer-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.2rem;margin-bottom:1.3rem;}
+.ask-answer-text{font-size:14px;line-height:1.65;}
+.ask-answer-text p{margin-bottom:0.7em;}
+.ask-src-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+.ask-src{font-size:11.5px;font-weight:600;background:var(--surface-2);border:none;border-radius:100px;padding:5px 11px;cursor:pointer;color:var(--text-2);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ask-src:hover{background:var(--accent-bg);color:var(--accent-text);}
+.ask-close{float:right;}
+
 /* Today blocks */
 .today-sec{margin-bottom:1.4rem;}
 @media(min-width:940px){
@@ -200,6 +210,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .revisit-src{font-size:11.5px;color:var(--text-3);}
 .revisit-actions{display:flex;gap:6px;margin-top:10px;}
 
+.topic-cloud{display:flex;gap:7px;flex-wrap:wrap;}
+.topic-chip{background:var(--surface);border:1px solid var(--border);border-radius:100px;padding:6px 13px;font:inherit;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;transition:all 0.12s;}
+.topic-chip:hover{border-color:var(--accent);color:var(--accent-text);background:var(--accent-bg);}
+.topic-chip .tc-ct{font-size:11px;color:var(--text-3);font-weight:500;}
+
 /* Library tiles */
 .tile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
 .tile{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:0.9rem;cursor:pointer;display:flex;flex-direction:column;gap:8px;transition:all 0.12s;}
@@ -209,6 +224,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .tile-title{font-size:13px;font-weight:600;line-height:1.4;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;flex:1;}
 .tile-foot{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-3);}
 .tile-foot .ti-heart-filled{color:var(--danger);font-size:13px;margin-left:auto;}
+
+.related-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:1rem 0 0.2rem;}
+.related-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-3);display:flex;align-items:center;gap:5px;margin-right:2px;}
+
+/* One big idea */
+.big-idea{background:linear-gradient(135deg,var(--accent-bg),transparent);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:1rem 1.1rem;margin-bottom:1rem;}
+.big-idea-label{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--accent-text);display:flex;align-items:center;gap:5px;margin-bottom:6px;}
+.big-idea-text{font-size:15px;font-weight:600;line-height:1.55;}
 
 /* Personal note */
 .note-wrap{margin:1.1rem 0 0.4rem;position:relative;}
@@ -503,11 +526,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
     <button class="btn btn-sm" onclick="surpriseMe()"><i class="ti ti-dice-5"></i> Surprise me</button>
   </div>
 
+  <div class="ask-box">
+    <div class="search-wrap" style="flex:1;margin:0">
+      <i class="ti ti-message-question"></i>
+      <input type="text" id="ask-input" placeholder="Ask your library anything…" onkeydown="if(event.key==='Enter')askLibrary()"/>
+    </div>
+    <button class="btn btn-sm btn-primary" id="ask-btn" onclick="askLibrary()"><i class="ti ti-sparkles"></i> Ask</button>
+  </div>
+  <div id="ask-answer"></div>
+
   <div class="today-duo">
     <div id="today-act"></div>
     <div id="today-revisit"></div>
   </div>
   <div id="today-new"></div>
+  <div id="home-topics"></div>
 
   <div id="home-favs-section" style="display:none">
     <div class="row-header" style="margin-top:0.4rem"><h2>Favourites</h2></div>
@@ -558,6 +591,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
       </div>
     </div>
     <div id="panel-result" style="display:none"></div>
+    <div id="panel-related"></div>
     <div class="note-wrap">
       <label class="note-label" for="panel-note"><i class="ti ti-pencil"></i> My note — how will I apply this?</label>
       <textarea id="panel-note" class="note-box" rows="2" placeholder="In my own words…" oninput="noteChanged()"></textarea>
@@ -748,10 +782,11 @@ const PODCAST_TYPES = {
 `Analyse this ${podName} podcast episode: "${ep.title}"${ep.guest ? " featuring "+ep.guest : ""}.${desc}${note}
 
 Be concise (max 3 key ideas, 3 action steps, 2 quotes).
+For one_big_idea: the single most valuable takeaway as ONE memorable sentence — if the listener remembers nothing else, this is it.
 For five_min_read: 400-500 word narrative article with subheadings (## prefix), flowing paragraphs, one pullquote (> prefix). Insightful, not a list.
 
 Return ONLY valid JSON:
-{"tags":["tag1","tag2"],"executive_summary":"2-3 sentence overview","key_ideas":["idea"],"action_steps":["step"],"best_quotes":["quote"],"one_minute_recap":"punchy recap","five_min_read":"## Heading\\n\\nText.\\n\\n> Pullquote.\\n\\n## Heading\\n\\nText."}`
+{"tags":["tag1","tag2"],"one_big_idea":"One memorable sentence","executive_summary":"2-3 sentence overview","key_ideas":["idea"],"action_steps":["step"],"best_quotes":["quote"],"one_minute_recap":"punchy recap","five_min_read":"## Heading\\n\\nText.\\n\\n> Pullquote.\\n\\n## Heading\\n\\nText."}`
   },
 
   news: {
@@ -800,9 +835,10 @@ Return ONLY valid JSON:
 `Analyse this ${podName} education/science podcast episode: "${ep.title}"${ep.guest ? " with "+ep.guest : ""}.${desc}${note}
 
 Extract the core concept clearly, the science/evidence behind it, a practical protocol someone can follow, common myths it debunks, and best quotes.
+For one_big_idea: the single most valuable takeaway as ONE memorable sentence — if the listener remembers nothing else, this is it.
 
 Return ONLY valid JSON:
-{"tags":["tag1","tag2"],"core_concept":"Clear 2-3 sentence explanation of the main concept","science_behind":["key scientific finding or mechanism"],"practical_protocol":["specific actionable protocol step"],"myths_debunked":["Myth: X. Reality: Y."],"best_quotes":["quote"],"one_minute_recap":"punchy recap","five_min_read":"## Heading\\n\\nText.\\n\\n> Pullquote.\\n\\n## Heading\\n\\nText."}`
+{"tags":["tag1","tag2"],"one_big_idea":"One memorable sentence","core_concept":"Clear 2-3 sentence explanation of the main concept","science_behind":["key scientific finding or mechanism"],"practical_protocol":["specific actionable protocol step"],"myths_debunked":["Myth: X. Reality: Y."],"best_quotes":["quote"],"one_minute_recap":"punchy recap","five_min_read":"## Heading\\n\\nText.\\n\\n> Pullquote.\\n\\n## Heading\\n\\nText."}`
   },
 
   business: {
@@ -820,10 +856,11 @@ Return ONLY valid JSON:
 `Analyse this ${podName} business/startup podcast episode: "${ep.title}"${ep.guest ? " featuring "+ep.guest : ""}.${desc}${note}
 
 Extract the business story, pivotal decisions made, lessons any entrepreneur can apply, and best quotes.
+For one_big_idea: the single most valuable takeaway as ONE memorable sentence — if the listener remembers nothing else, this is it.
 For five_min_read: engaging 400-500 word narrative with subheadings (## prefix) and one pullquote (> prefix).
 
 Return ONLY valid JSON:
-{"tags":["tag1","tag2"],"the_story":"2-3 sentence narrative of what this episode covers","key_decisions":["decision with outcome"],"lessons_learned":["concrete lesson"],"best_quotes":["quote"],"one_minute_recap":"punchy recap","five_min_read":"## Heading\\n\\nText.\\n\\n> Pullquote.\\n\\n## Heading\\n\\nText."}`
+{"tags":["tag1","tag2"],"one_big_idea":"One memorable sentence","the_story":"2-3 sentence narrative of what this episode covers","key_decisions":["decision with outcome"],"lessons_learned":["concrete lesson"],"best_quotes":["quote"],"one_minute_recap":"punchy recap","five_min_read":"## Heading\\n\\nText.\\n\\n> Pullquote.\\n\\n## Heading\\n\\nText."}`
   }
 };
 
@@ -1019,6 +1056,7 @@ function sectionMeta(key){
     if (s) return s;
   }
   if (key === "five_min_read") return { key, title:"5-min read", icon:"ti-book" };
+  if (key === "one_big_idea") return { key, title:"One big idea", icon:"ti-star" };
   return { key, title:key, icon:"ti-tag" };
 }
 
@@ -1433,6 +1471,10 @@ function renderBreakdown(prefix, d, ep){
 
   // Quick breakdown pane
   html += `<div class="bd-pane visible" id="${prefix}-pane-quick"><div class="bd-sections">`;
+  if (d.one_big_idea) {
+    html += `<div class="big-idea"><div class="big-idea-label"><i class="ti ti-star"></i> If you remember one thing</div>
+      <div class="bd-row"><p class="big-idea-text">${esc(d.one_big_idea)}</p>${saveBtnHtml(ep.id, "one_big_idea", 0)}</div></div>`;
+  }
   sections.forEach(sec => {
     const v = d[sec.key];
     if (!v || (Array.isArray(v) && !v.length)) return;
@@ -1540,6 +1582,79 @@ function tileHtml(ep){
   </div>`;
 }
 
+// ── Ask your library: answer questions from your own breakdowns
+function scoreEpisodesForQuestion(q){
+  const words = q.toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length > 3);
+  if (!words.length) return [];
+  return episodes.filter(e => summaries[e.id])
+    .map(e => {
+      const blob = epBlob(e);
+      let score = 0;
+      words.forEach(w => { if (blob.includes(w)) score += 1; });
+      return { e, score };
+    })
+    .filter(x => x.score > 0)
+    .sort((a,b) => b.score - a.score)
+    .slice(0, 6)
+    .map(x => x.e);
+}
+
+function digestForAsk(ep){
+  const d = summaries[ep.id];
+  const bits = [
+    d.one_big_idea && "Big idea: " + d.one_big_idea,
+    (d.executive_summary || d.core_concept || d.the_story || "").slice(0, 350),
+    d.key_ideas?.length        && "Ideas: "     + d.key_ideas.slice(0,4).join(" | "),
+    d.science_behind?.length   && "Science: "   + d.science_behind.slice(0,4).join(" | "),
+    d.practical_protocol?.length && "Protocol: " + d.practical_protocol.slice(0,4).join(" | "),
+    d.action_steps?.length     && "Actions: "   + d.action_steps.slice(0,3).join(" | "),
+    d.lessons_learned?.length  && "Lessons: "   + d.lessons_learned.slice(0,4).join(" | "),
+    d.top_stories?.length      && "Stories: "   + d.top_stories.slice(0,3).map(st => st.headline + " — " + (st.why_matters||"")).join(" | ")
+  ].filter(Boolean).join("\n");
+  return `EPISODE: "${ep.title}" (${getPodcast(ep.podcast).name})\n${bits}`.slice(0, 1400);
+}
+
+let asking = false;
+async function askLibrary(){
+  if (asking) return;
+  const q = document.getElementById("ask-input").value.trim();
+  const out = document.getElementById("ask-answer");
+  if (!q) return;
+  const sources = scoreEpisodesForQuestion(q);
+  if (!sources.length) {
+    out.innerHTML = `<div class="ask-answer-card"><div class="ask-answer-text">Nothing in your breakdowns covers that yet — generate a few more episodes on this topic and ask again.</div></div>`;
+    return;
+  }
+  asking = true;
+  const btn = document.getElementById("ask-btn");
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader-2" style="display:inline-block;animation:spin 0.8s linear infinite"></i>';
+  out.innerHTML = `<div class="ask-answer-card"><div class="ask-answer-text" style="color:var(--text-3)">Reading ${sources.length} episode${sources.length>1?"s":""} from your library…</div></div>`;
+  try {
+    const prompt = `You are answering a question using ONLY the person's own podcast notes below. Synthesize across sources; name the episode or guest inline when you use their point (e.g. "Huberman's episode argues…"). If the notes only partially cover the question, answer what they do cover and say plainly what they don't. No preamble, no markdown headers — 150-250 words of direct, useful prose.
+
+QUESTION: ${q}
+
+NOTES:
+${sources.map(digestForAsk).join("\n\n---\n\n")}`;
+    const r = await aiRequest(prompt, 900, "ask");
+    const paras = r.text.trim().split(/\n{2,}/).map(p => `<p>${esc(p)}</p>`).join("");
+    out.innerHTML = `<div class="ask-answer-card">
+      <button class="icon-btn ask-close" onclick="document.getElementById('ask-answer').innerHTML='';document.getElementById('ask-input').value=''"><i class="ti ti-x"></i></button>
+      <div class="ask-answer-text">${paras}</div>
+      <div class="ask-src-row">${sources.map(ep =>
+        `<button class="ask-src" onclick="openEpFromHome('${escAttr(ep.id)}')" title="${escAttr(ep.title)}"><i class="ti ti-microphone" style="font-size:11px"></i> ${esc(ep.title.slice(0,40))}${ep.title.length>40?"…":""}</button>`).join("")}
+      </div>
+    </div>`;
+  } catch(e) {
+    out.innerHTML = `<div class="ask-answer-card"><div class="ask-answer-text">Couldn't get an answer — ${esc(e.message.slice(0,90))}</div></div>`;
+  } finally {
+    asking = false;
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-sparkles"></i> Ask';
+  }
+}
+
 let revisitPick = null;   // session-stable pick for the Revisit card
 function shuffleRevisit(){ revisitPick = null; renderHomeRows(); }
 
@@ -1623,8 +1738,32 @@ function renderToday(){
     </div>` : "";
 }
 
+function tagCounts(){
+  const counts = {};
+  Object.values(summaries).forEach(d => (d.tags||[]).forEach(t => {
+    const k = t.toLowerCase().trim();
+    if (k) counts[k] = (counts[k]||0) + 1;
+  }));
+  return counts;
+}
+
+function renderTopics(){
+  const el = document.getElementById("home-topics");
+  if (!el) return;
+  const counts = tagCounts();
+  const top = Object.entries(counts).filter(([,n]) => n >= 2).sort((a,b) => b[1]-a[1]).slice(0, 12);
+  if (top.length < 3) { el.innerHTML = ""; return; }
+  el.innerHTML = `<div class="today-sec">
+    <div class="today-h"><i class="ti ti-hash"></i> Your topics</div>
+    <div class="topic-cloud">${top.map(([t,n]) =>
+      `<button class="topic-chip" onclick="searchByTag('${escAttr(t)}')">${esc(t)} <span class="tc-ct">${n}</span></button>`).join("")}
+    </div>
+  </div>`;
+}
+
 function renderHomeRows(){
   renderToday();
+  renderTopics();
   const ready = episodes.filter(e => summaries[e.id]);
   const favEps = ready.filter(e => favs.has(e.id));
 
@@ -1726,8 +1865,27 @@ function openEp(id){
   if (ep.link) lb.href = ep.link;
   if (summaries[ep.id]) renderBreakdown("panel", summaries[ep.id], ep);
   document.getElementById("panel-note").value = notes[ep.id] || "";
+  renderRelated(ep);
   updateFavBtn("panel", ep.id);
   window.scrollTo({ top: 0 });
+}
+
+function renderRelated(ep){
+  const el = document.getElementById("panel-related");
+  const d = summaries[ep.id];
+  if (!el) return;
+  if (!d?.tags?.length) { el.innerHTML = ""; return; }
+  const mine = new Set(d.tags.map(t => t.toLowerCase().trim()));
+  const rel = episodes
+    .filter(e => e.id !== ep.id && summaries[e.id]?.tags?.length)
+    .map(e => ({ e, n: summaries[e.id].tags.filter(t => mine.has(t.toLowerCase().trim())).length }))
+    .filter(x => x.n > 0)
+    .sort((a,b) => b.n - a.n)
+    .slice(0, 4);
+  el.innerHTML = rel.length ? `<div class="related-row">
+    <span class="related-label"><i class="ti ti-route"></i> Related</span>
+    ${rel.map(x => `<button class="ask-src" onclick="openEp('${escAttr(x.e.id)}')" title="${escAttr(x.e.title)}">${esc(x.e.title.slice(0,36))}${x.e.title.length>36?"…":""}</button>`).join("")}
+  </div>` : "";
 }
 
 let noteTimer = null;
@@ -1772,7 +1930,7 @@ function epBlob(e){
     const d = summaries[e.id];
     if (d) {
       t += " " + [
-        (d.tags||[]).join(" "), d.executive_summary, d.core_concept, d.the_story,
+        (d.tags||[]).join(" "), d.one_big_idea, d.executive_summary, d.core_concept, d.the_story,
         d.one_minute_recap, d.five_min_read,
         ...(d.key_ideas||[]), ...(d.action_steps||[]), ...(d.best_quotes||[]),
         ...(d.science_behind||[]), ...(d.practical_protocol||[]), ...(d.myths_debunked||[]),
@@ -2903,7 +3061,7 @@ const SUMMARY_HEADER = [
   "Top Stories","Quick Context","What To Watch",                        // news
   "Core Concept","The Science","Practical Protocol","Myths Debunked",   // education
   "The Story","Key Decisions","Lessons Learned",                        // business
-  "Best Quotes","Recap","5-Min Read"                                    // universal
+  "Best Quotes","Recap","5-Min Read","One Big Idea"                     // universal
 ];
 
 async function pushSummaries(){
@@ -2930,7 +3088,8 @@ async function pushSummaries(){
       (s.lessons_learned||[]).join(FIELD_SEP),
       (s.best_quotes||[]).join(FIELD_SEP),
       s.one_minute_recap||"",
-      s.five_min_read||""
+      s.five_min_read||"",
+      s.one_big_idea||""
     ]);
   });
   await writeSheet("Summaries", rows);
@@ -3051,7 +3210,8 @@ async function loadFromSheets(silent){
           lessons_learned: splitList(17),
           best_quotes: splitList(18),
           one_minute_recap: r[19]||"",
-          five_min_read: r[20]||""
+          five_min_read: r[20]||"",
+          one_big_idea: r[21]||""
         };
       });
       invalidateBlob();
