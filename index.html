@@ -757,7 +757,7 @@ Return ONLY valid JSON:
   news: {
     label: "News / current affairs",
     icon: "ti-news",
-    maxTokens: 1500,
+    maxTokens: 2000,
     sections: [
       { key:"top_stories",      title:"Top stories",   icon:"ti-news",        type:"stories", cls:"sec-summary", icls:"ic-summary" },
       { key:"quick_context",    title:"Quick context", icon:"ti-info-circle", type:"list",    cls:"sec-ideas",   icls:"ic-ideas"   },
@@ -765,10 +765,20 @@ Return ONLY valid JSON:
       { key:"one_minute_recap", title:"Recap",         icon:"ti-clock",       type:"text",    cls:"sec-recap",   icls:"ic-recap"   }
     ],
     prompt: (ep, podName, desc, note) =>
-`Analyse this ${podName} news podcast episode: "${ep.title}".${desc}${note}
+`You are an experienced news editor at a publication like The Economist or the FT, briefing a smart reader who did not hear this episode of ${podName}: "${ep.title}".${desc}${note}
 
-Extract the main news stories covered. For each story include: a headline, why it matters (1 sentence), and what to watch next (1 sentence).
-Also give quick context bullets and a one-minute recap.
+STORY DISCOVERY (do this before writing anything): a single conversation usually hides several independent newsworthy stories — main topics, but also announcements, milestones, personnel moves, disputes, and meta-stories about the outlet or industry itself. Identify every possible story, rank them by newsworthiness, then write up the strongest 3-5 as SEPARATE stories. Never fold a genuine story into another story's context.
+
+For each story:
+- headline: punchy newspaper style that makes a claim or captures tension — never a flat descriptive label. ("X Argues Critics Have a Point — and It's Costing Them" not "Criticism Debate in Media")
+- why_matters: infer, don't narrate. Who is affected, what changes, why an informed reader will care six months from now. Second-order implications beat restating what the hosts said.
+- what_watch: the concrete next development to look for — an event, decision, number, or date, not a vague theme.
+
+quick_context: background bullets a smart reader needs to fully get these stories (players, prior events, stakes).
+what_to_watch: the broader trends or follow-ups across the episode.
+one_minute_recap: a synthesis connecting the stories — the "so what" of the whole episode, not a list.
+
+Prefer analysis over narration throughout. Do not merely restate what the speakers said.
 
 Return ONLY valid JSON:
 {"tags":["tag1","tag2"],"top_stories":[{"headline":"Story headline","why_matters":"Why this matters","what_watch":"What to watch next"}],"quick_context":["background context point"],"what_to_watch":["broader trend or follow-up to watch"],"one_minute_recap":"punchy recap of the whole episode"}`
@@ -1064,7 +1074,7 @@ async function proxyFetch(fetchUrl){
   return data.text;
 }
 
-async function aiRequest(prompt, maxTokens){
+async function aiRequest(prompt, maxTokens, ptype){
   if (!workerUrl) throw new Error("Worker URL not set — paste it in the setup banner above.");
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 120000);   // 2 min cap so a stalled request can't hang the queue
@@ -1076,6 +1086,7 @@ async function aiRequest(prompt, maxTokens){
       body: JSON.stringify({
         provider: (AI_ENGINES[aiProvider] || AI_ENGINES.claude).provider,
         gemini_model: (AI_ENGINES[aiProvider] || {}).model,
+        ptype: ptype || "general",
         model: AI_MODEL, max_tokens: maxTokens,
         messages: [{ role:"user", content:prompt }]
       }),
@@ -1119,8 +1130,9 @@ async function callAI(ep){
   const desc = ep.desc ? "\nShow notes: " + ep.desc.slice(0,600) : "";
   const note = !ep.desc ? "\nNo description provided — use your general knowledge of this episode/guest if recognisable, else give a plausible general take." : "";
   const prompt = type.prompt(ep, getPodcast(ep.podcast).name, desc, note);
-  let r = await aiRequest(prompt, type.maxTokens);
-  if (r.truncated) r = await aiRequest(prompt, Math.min(type.maxTokens * 2, 6000));   // response was cut off — one retry with more room
+  const ptype = getPodType(ep.podcast);
+  let r = await aiRequest(prompt, type.maxTokens, ptype);
+  if (r.truncated) r = await aiRequest(prompt, Math.min(type.maxTokens * 2, 6000), ptype);   // response was cut off — one retry with more room
   if (r.truncated) throw new Error("The AI response was cut off twice — try again in a moment.");
   return extractJson(r.text);
 }
