@@ -2711,10 +2711,34 @@ function setNdFilter(f){
 const BRIEF_KEY = "doac-brief-v1";
 let briefBusy = false;
 
-function briefFeedUrl(kind, topic){
-  if (kind === "world") return "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en";
-  if (kind === "india") return "https://news.google.com/rss?hl=en-IN&gl=IN&ceid=IN:en";
-  return "https://news.google.com/rss/search?q=" + encodeURIComponent(topic) + "&hl=en-IN&gl=IN&ceid=IN:en";
+// Multiple sources per section — Google News first (best curation), with
+// fallbacks that are friendly to datacenter IPs if Google blocks the worker.
+function briefFeedUrls(kind, topic){
+  if (kind === "world") return [
+    "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en",
+    "https://feeds.bbci.co.uk/news/world/rss.xml",
+    "https://www.aljazeera.com/xml/rss/all.xml"
+  ];
+  if (kind === "india") return [
+    "https://news.google.com/rss?hl=en-IN&gl=IN&ceid=IN:en",
+    "https://timesofindia.indiatimes.com/rssfeedstopstories.cms",
+    "https://www.thehindu.com/news/national/feeder/default.rss"
+  ];
+  return [
+    "https://news.google.com/rss/search?q=" + encodeURIComponent(topic) + "&hl=en-IN&gl=IN&ceid=IN:en",
+    "https://www.bing.com/news/search?q=" + encodeURIComponent(topic) + "&format=rss"
+  ];
+}
+
+// Try each source in order; first one that yields headlines wins.
+async function fetchHeadlines(kind, topic, limit){
+  for (const url of briefFeedUrls(kind, topic)) {
+    try {
+      const items = parseNewsFeed(await proxyFetch(url), limit);
+      if (items.length) return items;
+    } catch(e) { /* try the next source */ }
+  }
+  return [];
 }
 
 function parseNewsFeed(xmlText, limit){
@@ -2747,11 +2771,11 @@ async function generateBriefing(force){
   try {
     const topics = followedTopics();
     const [world, india, ...topicFeeds] = await Promise.all([
-      proxyFetch(briefFeedUrl("world")).then(t => parseNewsFeed(t, 15)).catch(() => []),
-      proxyFetch(briefFeedUrl("india")).then(t => parseNewsFeed(t, 15)).catch(() => []),
-      ...topics.map(tp => proxyFetch(briefFeedUrl("topic", tp)).then(t => parseNewsFeed(t, 8)).catch(() => []))
+      fetchHeadlines("world", null, 15),
+      fetchHeadlines("india", null, 15),
+      ...topics.map(tp => fetchHeadlines("topic", tp, 8))
     ]);
-    if (!world.length && !india.length) throw new Error("couldn't fetch news feeds");
+    if (!world.length && !india.length) throw new Error("no news source reachable — check the worker is updated & deployed");
 
     const fmt = (hs) => hs.map(h => "- " + h.title + (h.src ? ` (${h.src})` : "")).join("\n");
     const topicBlock = topics.map((tp, i) =>
