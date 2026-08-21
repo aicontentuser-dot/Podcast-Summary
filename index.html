@@ -92,6 +92,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .saved-card-top .col-type{margin:0;}
 .saved-x{margin-left:auto;}
 
+/* Daily briefing */
+.brief-wrap{margin-bottom:1.6rem;}
+.brief-head{display:flex;align-items:center;gap:8px;margin-bottom:0.8rem;}
+.brief-head h2{font-size:16px;font-weight:800;letter-spacing:-0.01em;flex:1;}
+.brief-date{font-size:11.5px;color:var(--text-3);font-weight:600;}
+.brief-sec-h{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-3);margin:1rem 0 7px;display:flex;align-items:center;gap:6px;}
+.brief-story{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:0.85rem 1rem;margin-bottom:6px;cursor:pointer;transition:border-color 0.12s;}
+.brief-story:hover{border-color:var(--border-strong);}
+.brief-title{font-size:13.5px;font-weight:700;line-height:1.4;display:flex;gap:8px;align-items:baseline;}
+.brief-title .bt-topic{font-size:10px;font-weight:700;color:var(--accent-text);background:var(--accent-bg);padding:2px 8px;border-radius:100px;flex-shrink:0;text-transform:uppercase;letter-spacing:0.04em;}
+.brief-what{font-size:13px;color:var(--text-2);line-height:1.55;margin-top:4px;}
+.brief-more{display:none;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);}
+.brief-story.open .brief-more{display:block;}
+.brief-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-3);margin-bottom:3px;}
+.brief-context,.brief-why{font-size:13px;line-height:1.6;margin-bottom:8px;}
+.brief-why{color:var(--accent-text);}
+.brief-loading{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.4rem;text-align:center;color:var(--text-3);font-size:13px;}
+.brief-src-note{font-size:10.5px;color:var(--text-3);margin-top:8px;}
+
 /* AI provider segment */
 .ai-provider-row{display:flex;align-items:center;gap:10px;margin-top:0.8rem;padding:0.7rem 1.1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);}
 .ai-label{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;flex:1;}
@@ -648,6 +667,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 
 <!-- ══ NEWS DIGEST ════════════════════════════════════ -->
 <div class="section" id="tab-news">
+  <div id="daily-brief"></div>
+
   <div class="nd-header">
     <div>
       <h2>News Digest</h2>
@@ -1112,7 +1133,7 @@ async function proxyFetch(fetchUrl){
   return data.text;
 }
 
-async function aiRequest(prompt, maxTokens, ptype){
+async function aiRequest(prompt, maxTokens, ptype, engineKey){
   if (!workerUrl) throw new Error("Worker URL not set — paste it in the setup banner above.");
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 120000);   // 2 min cap so a stalled request can't hang the queue
@@ -1122,8 +1143,8 @@ async function aiRequest(prompt, maxTokens, ptype){
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        provider: (AI_ENGINES[aiProvider] || AI_ENGINES.claude).provider,
-        gemini_model: (AI_ENGINES[aiProvider] || {}).model,
+        provider: (AI_ENGINES[engineKey || aiProvider] || AI_ENGINES.claude).provider,
+        gemini_model: (AI_ENGINES[engineKey || aiProvider] || {}).model,
         ptype: ptype || "general",
         model: AI_MODEL, max_tokens: maxTokens,
         messages: [{ role:"user", content:prompt }]
@@ -2686,6 +2707,134 @@ function setNdFilter(f){
   renderNewsDigest();
 }
 
+/* ── Daily briefing: Google News RSS → Gemini Flash → World / India / your topics ── */
+const BRIEF_KEY = "doac-brief-v1";
+let briefBusy = false;
+
+function briefFeedUrl(kind, topic){
+  if (kind === "world") return "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en";
+  if (kind === "india") return "https://news.google.com/rss?hl=en-IN&gl=IN&ceid=IN:en";
+  return "https://news.google.com/rss/search?q=" + encodeURIComponent(topic) + "&hl=en-IN&gl=IN&ceid=IN:en";
+}
+
+function parseNewsFeed(xmlText, limit){
+  const xml = new DOMParser().parseFromString(xmlText, "text/xml");
+  if (xml.querySelector("parsererror")) return [];
+  return [...xml.querySelectorAll("item")].slice(0, limit).map(it => {
+    let title = it.querySelector("title")?.textContent || "";
+    const src = it.querySelector("source")?.textContent || "";
+    // Google News titles end with " - Source"
+    if (src && title.endsWith(" - " + src)) title = title.slice(0, -(" - " + src).length);
+    return { title: title.trim(), src };
+  }).filter(h => h.title);
+}
+
+function followedTopics(){
+  const tags = new Set();
+  newsItems.filter(n => n.following).forEach(n => (n.tags||[]).forEach(t => tags.add(t.trim())));
+  return [...tags].filter(Boolean).slice(0, 4);
+}
+
+function briefToday(){ return new Date().toDateString(); }
+
+async function generateBriefing(force){
+  if (briefBusy) return;
+  const cached = load(BRIEF_KEY, null);
+  if (!force && cached && cached.date === briefToday()) { renderBriefing(); return; }
+  if (!workerUrl) return;
+  briefBusy = true;
+  renderBriefing();   // shows loading state
+  try {
+    const topics = followedTopics();
+    const [world, india, ...topicFeeds] = await Promise.all([
+      proxyFetch(briefFeedUrl("world")).then(t => parseNewsFeed(t, 15)).catch(() => []),
+      proxyFetch(briefFeedUrl("india")).then(t => parseNewsFeed(t, 15)).catch(() => []),
+      ...topics.map(tp => proxyFetch(briefFeedUrl("topic", tp)).then(t => parseNewsFeed(t, 8)).catch(() => []))
+    ]);
+    if (!world.length && !india.length) throw new Error("couldn't fetch news feeds");
+
+    const fmt = (hs) => hs.map(h => "- " + h.title + (h.src ? ` (${h.src})` : "")).join("\n");
+    const topicBlock = topics.map((tp, i) =>
+      topicFeeds[i]?.length ? `HEADLINES FOR FOLLOWED TOPIC "${tp}":\n${fmt(topicFeeds[i])}` : "").filter(Boolean).join("\n\n");
+
+    const prompt = `Write today's news briefing (${new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}) for one thoughtful reader in India who follows global affairs.
+
+GROUNDING RULES (critical): The headlines below are your ONLY source of today's events. Never claim any event, number, or development that is not in these headlines. For context you may draw on your background knowledge of history, players, and stakes — clearly as background, not as today's news.
+
+WORLD HEADLINES:
+${fmt(world)}
+
+INDIA HEADLINES:
+${fmt(india)}
+
+${topicBlock}
+
+Select the 3-4 most consequential WORLD stories and the 3-4 most consequential INDIA stories. Skip celebrity, sport, and routine crime unless genuinely major. Cluster related headlines into one story. For each followed topic above, include its single most meaningful story if there is one (omit the topic if its headlines are trivial).
+
+Each story needs:
+- "title": punchy, in your own words
+- "what_happened": 1-2 sentences strictly from the headlines
+- "context": 2-3 sentences of background a smart reader needs (history, players, stakes)
+- "why_matters": 1-2 sentences of second-order implication — who is affected, what changes
+
+Return ONLY valid JSON:
+{"world":[{"title":"","what_happened":"","context":"","why_matters":""}],"india":[{"title":"","what_happened":"","context":"","why_matters":""}],"topics":[{"topic":"topic name","title":"","what_happened":"","context":"","why_matters":""}]}`;
+
+    let r = await aiRequest(prompt, 2500, "brief", "gemini-flash");
+    if (r.truncated) r = await aiRequest(prompt, 4000, "brief", "gemini-flash");
+    const data = extractJson(r.text);
+    save(BRIEF_KEY, { date: briefToday(), at: Date.now(), data });
+    toast("Today's briefing is ready");
+  } catch(e) {
+    save(BRIEF_KEY, { date: briefToday(), error: e.message.slice(0,120), at: Date.now() });
+  } finally {
+    briefBusy = false;
+    renderBriefing();
+  }
+}
+
+function toggleBriefStory(el){ el.classList.toggle("open"); }
+
+function briefStoryHtml(st, topic){
+  return `<div class="brief-story" onclick="toggleBriefStory(this)">
+    <div class="brief-title">${topic ? `<span class="bt-topic">${esc(topic)}</span>` : ""}<span>${esc(st.title||"")}</span></div>
+    <div class="brief-what">${esc(st.what_happened||"")}</div>
+    <div class="brief-more">
+      ${st.context ? `<div class="brief-label">Context</div><div class="brief-context">${esc(st.context)}</div>` : ""}
+      ${st.why_matters ? `<div class="brief-label">Why it matters</div><div class="brief-why">${esc(st.why_matters)}</div>` : ""}
+    </div>
+  </div>`;
+}
+
+function renderBriefing(){
+  const el = document.getElementById("daily-brief");
+  if (!el) return;
+  const cached = load(BRIEF_KEY, null);
+  const dateStr = new Date().toLocaleDateString("en-GB",{ day:"numeric", month:"short" });
+  const head = `<div class="brief-head"><h2><i class="ti ti-world"></i> Today's briefing</h2><span class="brief-date">${dateStr}</span>
+    <button class="icon-btn" onclick="generateBriefing(true)" title="Refresh" ${briefBusy?"disabled":""}><i class="ti ti-refresh"></i></button></div>`;
+
+  if (briefBusy) {
+    el.innerHTML = `<div class="brief-wrap">${head}<div class="brief-loading"><i class="ti ti-loader-2" style="display:inline-block;animation:spin 0.8s linear infinite"></i>&nbsp; Reading today's headlines and writing your briefing…</div></div>`;
+    return;
+  }
+  if (!cached || cached.date !== briefToday()) {
+    el.innerHTML = `<div class="brief-wrap">${head}<div class="brief-loading">Tap refresh to generate today's briefing.</div></div>`;
+    return;
+  }
+  if (cached.error) {
+    el.innerHTML = `<div class="brief-wrap">${head}<div class="brief-loading">Couldn't build the briefing — ${esc(cached.error)}<br><button class="btn btn-sm" style="margin-top:8px" onclick="generateBriefing(true)">Try again</button></div></div>`;
+    return;
+  }
+  const d = cached.data || {};
+  el.innerHTML = `<div class="brief-wrap">${head}
+    ${d.world?.length ? `<div class="brief-sec-h"><i class="ti ti-world"></i> World</div>` + d.world.map(st => briefStoryHtml(st)).join("") : ""}
+    ${d.india?.length ? `<div class="brief-sec-h"><i class="ti ti-map-pin"></i> India</div>` + d.india.map(st => briefStoryHtml(st)).join("") : ""}
+    ${d.topics?.length ? `<div class="brief-sec-h"><i class="ti ti-bell"></i> Your topics</div>` + d.topics.map(st => briefStoryHtml(st, st.topic)).join("") : ""}
+    <div class="brief-src-note">Grounded in today's Google News headlines · written by Gemini Flash · tap a story for context</div>
+  </div>`;
+}
+
 function renderNewsDigest(){
   // Topic pills from all tags across bookmarked stories
   const allTags = [...new Set(newsItems.flatMap(n => n.tags || []))];
@@ -3295,7 +3444,7 @@ function showTab(name){
   document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
   if (name === "browse")     { filtered = [...episodes]; renderEpGroups(); }
   if (name === "saved")      { renderSaved(); renderWeeklyFocus(); renderAiProviderUI(); }
-  if (name === "news")         renderNewsDigest();
+  if (name === "news")       { renderNewsDigest(); generateBriefing(false); }
   renderBulkBar();
 }
 
