@@ -1133,7 +1133,29 @@ async function proxyFetch(fetchUrl){
   return data.text;
 }
 
+// Google refuses Gemini calls routed through some Cloudflare data centres.
+// When that happens we switch to Claude for the rest of the session.
+let geminiBlocked = false, lastEngineUsed = null;
 async function aiRequest(prompt, maxTokens, ptype, engineKey){
+  const key = engineKey || aiProvider;
+  const wantsGemini = (AI_ENGINES[key] || {}).provider === "gemini";
+  if (wantsGemini && geminiBlocked) { lastEngineUsed = "claude"; return aiRequestRaw(prompt, maxTokens, ptype, "claude"); }
+  try {
+    const r = await aiRequestRaw(prompt, maxTokens, ptype, key);
+    lastEngineUsed = key;
+    return r;
+  } catch(e) {
+    if (wantsGemini && /location is not supported|gemini_location_blocked/i.test(e.message)) {
+      geminiBlocked = true;
+      toast("Gemini isn't reachable from your current server region — using Claude instead");
+      lastEngineUsed = "claude";
+      return aiRequestRaw(prompt, maxTokens, ptype, "claude");
+    }
+    throw e;
+  }
+}
+
+async function aiRequestRaw(prompt, maxTokens, ptype, engineKey){
   if (!workerUrl) throw new Error("Worker URL not set — paste it in the setup banner above.");
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 120000);   // 2 min cap so a stalled request can't hang the queue
@@ -2807,7 +2829,7 @@ Return ONLY valid JSON:
     let r = await aiRequest(prompt, 2500, "brief", "gemini-flash");
     if (r.truncated) r = await aiRequest(prompt, 4000, "brief", "gemini-flash");
     const data = extractJson(r.text);
-    save(BRIEF_KEY, { date: briefToday(), at: Date.now(), data });
+    save(BRIEF_KEY, { date: briefToday(), at: Date.now(), data, engine: lastEngineUsed });
     toast("Today's briefing is ready");
   } catch(e) {
     save(BRIEF_KEY, { date: briefToday(), error: e.message.slice(0,120), at: Date.now() });
@@ -2855,7 +2877,7 @@ function renderBriefing(){
     ${d.world?.length ? `<div class="brief-sec-h"><i class="ti ti-world"></i> World</div>` + d.world.map(st => briefStoryHtml(st)).join("") : ""}
     ${d.india?.length ? `<div class="brief-sec-h"><i class="ti ti-map-pin"></i> India</div>` + d.india.map(st => briefStoryHtml(st)).join("") : ""}
     ${d.topics?.length ? `<div class="brief-sec-h"><i class="ti ti-bell"></i> Your topics</div>` + d.topics.map(st => briefStoryHtml(st, st.topic)).join("") : ""}
-    <div class="brief-src-note">Grounded in today's Google News headlines · written by Gemini Flash · tap a story for context</div>
+    <div class="brief-src-note">Grounded in today's headlines · written by ${cached.engine === "claude" ? "Claude" : "Gemini Flash"} · tap a story for context</div>
   </div>`;
 }
 
