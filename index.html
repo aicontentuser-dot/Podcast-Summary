@@ -41,24 +41,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 @keyframes spin{to{transform:rotate(360deg);}}
 @media(max-width:480px){.shell{padding:1rem 0.75rem 3rem;}.hero-title{font-size:16px;}}
 
-/* ── Desktop layout: sidebar navigation ── */
-@media(min-width:940px){
-  body::before{content:'';position:fixed;left:0;top:0;bottom:0;width:236px;background:var(--surface);border-right:1px solid var(--border);z-index:5;}
-  .topbar{position:fixed;left:0;top:0;width:236px;z-index:6;margin:0;padding:1.4rem 1.2rem 1rem;}
-  .nav{position:fixed;left:0;top:96px;width:236px;z-index:6;flex-direction:column;background:none;padding:0 0.9rem;gap:2px;border-radius:0;}
-  .nav button{flex:none;display:flex;align-items:center;gap:10px;text-align:left;padding:10px 12px;font-size:13.5px;border-radius:10px;}
-  .nav button i{display:inline;font-size:17px;}
-  .nav button:hover{background:var(--surface-2);}
-  .nav button.active{background:var(--accent-bg);color:var(--accent-text);box-shadow:none;}
-  .shell{margin-left:236px;max-width:1080px;padding:1.7rem 2.2rem 4.5rem;}
-  .bulk-bar{left:236px;}
-  .tile-grid{grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:12px;}
-  .pod-grid{grid-template-columns:repeat(auto-fill,minmax(165px,1fr));}
-  .summary-panel{max-width:800px;}
-  .modal{max-width:480px;}
-  .modal.modal-lg{max-width:600px;}
-}
-
 /* ════════════════════════════════════════════════════════
    CHROME — banner, topbar, nav, toast
    ════════════════════════════════════════════════════════ */
@@ -494,11 +476,84 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .nd-meta{font-size:12px;color:var(--text-3);margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .nd-follow-btn{background:none;border:1px solid var(--border);border-radius:100px;padding:3px 10px;font-size:11.5px;cursor:pointer;color:var(--text-2);display:inline-flex;align-items:center;gap:4px;transition:all 0.12s;}
 .nd-follow-btn.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent-text);font-weight:600;}
+
+/* ════════════════════════════════════════════════════════
+   LAYOUT OVERRIDES — kept last so they win the cascade
+   ════════════════════════════════════════════════════════ */
+.topbar p{display:none;}
+.topbar-gear{margin-left:auto;font-size:19px;}
+.pb-insight.is-quote::before{content:none;}
+.saved-grouped .pb-area-tag{display:none;}
+.lib-more{background:none;border:none;font:inherit;font-size:12.5px;font-weight:600;color:var(--accent-text);cursor:pointer;padding:0;}
+.lib-more:hover{text-decoration:underline;}
+.reader-actions{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 0.9rem;}
+.reader-foot{display:flex;justify-content:flex-end;margin-top:1rem;}
+.settings-sec{margin-bottom:1rem;}
+.settings-sec h3{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-3);margin-bottom:7px;}
+.settings-sec .sync-panel,.settings-sec .ai-provider-row{margin-top:0;}
+.settings-sec .ai-provider-row{padding:4px;}
+.settings-sec .ai-label{display:none;}
+.settings-sec .seg{flex:1;}
+.settings-sec .seg button{flex:1;}
+
+/* ── Phone & tablet: bottom tab bar, flatter reader ── */
+@media(max-width:939px){
+  .shell{padding-bottom:calc(5.5rem + env(safe-area-inset-bottom));}
+  .topbar{margin-bottom:1rem;}
+  .logo{width:32px;height:32px;border-radius:9px;font-size:16px;}
+  .topbar h1{font-size:16px;}
+  .nav{position:fixed;left:0;right:0;bottom:0;z-index:80;margin:0;border-radius:0;gap:0;
+       background:var(--surface);border-top:1px solid var(--border);
+       padding:5px 6px calc(5px + env(safe-area-inset-bottom));}
+  .nav button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;font-size:10.5px;font-weight:600;border-radius:10px;}
+  .nav button i{display:block;font-size:21px;}
+  .nav button.active{background:none;box-shadow:none;color:var(--accent-text);}
+  .toast{bottom:calc(76px + env(safe-area-inset-bottom));}
+  .bulk-bar{padding-bottom:calc(72px + env(safe-area-inset-bottom));}
+  .summary-panel{background:none;border:none;box-shadow:none;padding:0;margin-top:0;}
+  .summary-panel::before{display:none;}
+  .bd-sec{padding:11px 12px;}
+}
+
+/* ── Desktop: sidebar navigation ── */
+@media(min-width:940px){
+  body::before{content:'';position:fixed;left:0;top:0;bottom:0;width:236px;background:var(--surface);border-right:1px solid var(--border);z-index:5;}
+  .topbar{position:fixed;left:0;top:0;width:236px;z-index:6;margin:0;padding:1.4rem 1rem 1rem 1.2rem;}
+  .topbar h1{font-size:15px;line-height:1.25;}
+  .nav{position:fixed;left:0;top:84px;width:236px;z-index:6;flex-direction:column;background:none;padding:0 0.9rem;gap:2px;border-radius:0;margin:0;}
+  .nav button{flex:none;display:flex;align-items:center;gap:10px;text-align:left;padding:10px 12px;font-size:13.5px;border-radius:10px;}
+  .nav button i{display:inline;font-size:17px;}
+  .nav button:hover{background:var(--surface-2);}
+  .nav button.active{background:var(--accent-bg);color:var(--accent-text);box-shadow:none;}
+  .shell{margin-left:236px;max-width:1080px;padding:1.7rem 2.2rem 4.5rem;}
+  .bulk-bar{left:236px;}
+  .tile-grid{grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:12px;}
+  .pod-grid{grid-template-columns:repeat(auto-fill,minmax(165px,1fr));}
+  .pod-rail{flex-wrap:wrap;overflow:visible;}
+  #weekly-focus-row{flex-wrap:wrap;overflow:visible;}
+  .summary-panel{max-width:800px;}
+  .modal{max-width:480px;}
+  .modal.modal-lg{max-width:600px;}
+}
 </style>
 </head>
 <body>
 <div class="shell">
 
+<!-- Topbar -->
+<div class="topbar">
+  <div class="logo">🎙</div>
+  <div><h1>Podcast Summaries</h1><p>Deep-dive breakdowns on demand</p></div>
+  <button class="icon-btn topbar-gear" onclick="openSettings()" title="Settings"><i class="ti ti-settings"></i></button>
+</div>
+
+<!-- Nav -->
+<div class="nav" id="nav">
+  <button class="active" data-tab="home" onclick="showTab('home')"><i class="ti ti-layout-grid"></i><span>Home</span></button>
+  <button data-tab="browse" onclick="showTab('browse')"><i class="ti ti-microphone"></i><span>Episodes</span></button>
+  <button data-tab="saved" onclick="showTab('saved')"><i class="ti ti-bookmarks"></i><span>Saved</span></button>
+  <button data-tab="news" onclick="showTab('news')"><i class="ti ti-news"></i><span>News</span></button>
+</div>
 <!-- Setup banner -->
 <div class="setup-banner" id="setup-banner">
   <i class="ti ti-alert-circle"></i>
@@ -521,19 +576,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
   </div>
 </div>
 
-<!-- Topbar -->
-<div class="topbar">
-  <div class="logo">🎙</div>
-  <div><h1>Podcast Summaries</h1><p>Deep-dive breakdowns on demand</p></div>
-</div>
 
-<!-- Nav -->
-<div class="nav" id="nav">
-  <button class="active" data-tab="home" onclick="showTab('home')"><i class="ti ti-layout-grid"></i><span>Home</span></button>
-  <button data-tab="browse" onclick="showTab('browse')"><i class="ti ti-microphone"></i><span>Episodes</span></button>
-  <button data-tab="saved" onclick="showTab('saved')"><i class="ti ti-bookmarks"></i><span>Saved</span></button>
-  <button data-tab="news" onclick="showTab('news')"><i class="ti ti-news"></i><span>News</span></button>
-</div>
 
 <!-- ══ HOME ═══════════════════════════════════════════ -->
 <div class="section visible" id="tab-home">
@@ -567,7 +610,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
   </div>
 
   <div id="home-ready-section" style="display:none">
-    <div class="row-header"><h2>Library</h2></div>
+    <div class="row-header"><h2>Recent breakdowns</h2><button class="lib-more" id="lib-more" onclick="showAllBreakdowns()"></button></div>
     <div class="tile-grid" id="home-ready"></div>
   </div>
 
@@ -600,6 +643,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
         <div class="ep-date-sm" id="panel-date" style="margin-top:2px"></div>
       </div>
     </div>
+    <div class="reader-actions">
+      <button class="btn btn-sm btn-fav" id="panel-fav-btn" onclick="toggleFav('panel')"><i class="ti ti-heart" id="panel-fav-icon"></i><span id="panel-fav-label">Save</span></button>
+      <a class="btn btn-sm btn-listen" id="panel-listen-btn" href="#" target="_blank" rel="noopener" style="display:none"><i class="ti ti-headphones"></i> Listen</a>
+    </div>
     <div class="divider"></div>
     <div id="panel-cta">
       <div class="gen-cta">
@@ -616,10 +663,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
       <textarea id="panel-note" class="note-box" rows="2" placeholder="In my own words…" oninput="noteChanged()"></textarea>
       <span class="note-saved" id="note-saved">Saved</span>
     </div>
-    <div class="action-row" id="panel-action-row">
-      <button class="btn btn-fav" id="panel-fav-btn" onclick="toggleFav('panel')"><i class="ti ti-heart" id="panel-fav-icon"></i><span id="panel-fav-label">Save</span></button>
-      <a class="btn btn-listen" id="panel-listen-btn" href="#" target="_blank" rel="noopener" style="display:none"><i class="ti ti-headphones"></i> Listen</a>
-      <button class="btn btn-danger btn-ml" onclick="deleteEp()"><i class="ti ti-trash"></i> Delete</button>
+    <div class="reader-foot" id="panel-action-row">
+      <button class="btn btn-sm btn-danger" onclick="deleteEp()"><i class="ti ti-trash"></i> Delete episode</button>
     </div>
   </div>
 </div>
@@ -642,27 +687,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
   <div class="pills pills-sub" id="saved-status-pills"></div>
   <div id="saved-list"></div>
 
-  <div class="card sync-panel">
-    <div class="sync-left">
-      <span class="sync-dot" id="sync-dot"></span>
-      <div style="min-width:0">
-        <div class="sync-title">Google Sheets</div>
-        <div class="sync-status" id="sync-status">Not connected</div>
-      </div>
-    </div>
-    <div class="sync-btns">
-      <button id="sync-signin-btn" class="btn btn-sm btn-primary" onclick="signInGoogle()"><i class="ti ti-plug-connected"></i> Connect</button>
-      <button id="sync-now-btn" class="btn btn-sm" onclick="syncAll()" style="display:none"><i class="ti ti-refresh"></i> Sync</button>
-      <button id="sync-load-btn" class="btn btn-sm" onclick="loadFromSheets()" title="Pull from Sheets"><i class="ti ti-cloud-download"></i></button>
-      <button id="sync-signout-btn" class="icon-btn" onclick="signOutGoogle()" style="display:none" title="Sign out"><i class="ti ti-logout"></i></button>
-    </div>
-  </div>
-  <div class="ai-provider-row" id="ai-provider-row"></div>
-  <div class="action-row" style="margin-top:0.8rem">
-    <button class="btn btn-sm" onclick="exportData()"><i class="ti ti-download"></i> Export</button>
-    <button class="btn btn-sm" onclick="document.getElementById('import-input').click()"><i class="ti ti-upload"></i> Import</button>
-    <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(event)"/>
-  </div>
+
 </div>
 
 <!-- ══ NEWS DIGEST ════════════════════════════════════ -->
@@ -719,6 +744,41 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
   </div>
 </div>
 
+<!-- Settings sheet -->
+<div class="modal-backdrop" id="settings-modal" onclick="if(event.target===this)closeSettings()">
+  <div class="modal">
+    <h2>Settings</h2>
+    <div class="settings-sec"><h3>Sync</h3>
+  <div class="card sync-panel">
+    <div class="sync-left">
+      <span class="sync-dot" id="sync-dot"></span>
+      <div style="min-width:0">
+        <div class="sync-title">Google Sheets</div>
+        <div class="sync-status" id="sync-status">Not connected</div>
+      </div>
+    </div>
+    <div class="sync-btns">
+      <button id="sync-signin-btn" class="btn btn-sm btn-primary" onclick="signInGoogle()"><i class="ti ti-plug-connected"></i> Connect</button>
+      <button id="sync-now-btn" class="btn btn-sm" onclick="syncAll()" style="display:none"><i class="ti ti-refresh"></i> Sync</button>
+      <button id="sync-load-btn" class="btn btn-sm" onclick="loadFromSheets()" title="Pull from Sheets"><i class="ti ti-cloud-download"></i></button>
+      <button id="sync-signout-btn" class="icon-btn" onclick="signOutGoogle()" style="display:none" title="Sign out"><i class="ti ti-logout"></i></button>
+    </div>
+  </div>
+    </div>
+    <div class="settings-sec"><h3>AI engine for breakdowns</h3>
+  <div class="ai-provider-row" id="ai-provider-row"></div>
+    </div>
+    <div class="settings-sec"><h3>Backup</h3>
+  <div class="action-row">
+    <button class="btn btn-sm" onclick="exportData()"><i class="ti ti-download"></i> Export</button>
+    <button class="btn btn-sm" onclick="document.getElementById('import-input').click()"><i class="ti ti-upload"></i> Import</button>
+    <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(event)"/>
+  </div>
+    </div>
+    <div class="action-row" style="justify-content:flex-end"><button class="btn" onclick="closeSettings()">Done</button></div>
+  </div>
+</div>
+
 <!-- Add Episode Modal -->
 <div class="modal-backdrop" id="add-ep-modal">
   <div class="modal">
@@ -768,6 +828,12 @@ const AI_ENGINES = {
   "gemini-flash": { label:"Gemini Flash", provider:"gemini", model:"gemini-2.5-flash" },
   "gemini-pro":   { label:"Gemini Pro",   provider:"gemini", model:"gemini-2.5-pro" },
 };
+function openSettings(){
+  renderAiProviderUI();
+  document.getElementById("settings-modal").classList.add("open");
+}
+function closeSettings(){ document.getElementById("settings-modal").classList.remove("open"); }
+
 function setAiProvider(p){
   aiProvider = p;
   localStorage.setItem("ai-provider", p);
@@ -1564,7 +1630,8 @@ function renderBreakdown(prefix, d, ep){
   }
 
   r.innerHTML = html;
-  document.getElementById(prefix + "-action-row").style.display = "flex";
+  const ar = document.getElementById(prefix + "-action-row");
+  if (ar) ar.style.display = "flex";
   updateFavBtn(prefix, ep.id);
 }
 
@@ -1765,8 +1832,11 @@ function renderToday(){
 
   // ── New this week: fresh episodes without breakdowns
   const weekAgo = Date.now() - 7 * 86400000;
+  const seenPod = new Set();
   const freshEps = episodes.filter(e => !summaries[e.id] && (e.ts || 0) >= weekAgo)
-    .sort(byNewest).slice(0, 4);
+    .sort(byNewest)
+    .filter(e => { const k = e.podcast || "doac"; if (seenPod.has(k)) return false; seenPod.add(k); return true; })
+    .slice(0, 4);
   document.getElementById("today-new").innerHTML = freshEps.length ? `
     <div class="today-sec">
       <div class="today-h"><i class="ti ti-sparkles"></i> New this week</div>
@@ -1823,16 +1893,28 @@ function renderHomeRows(){
   fs.style.display = favEps.length ? "block" : "none";
   if (favEps.length) document.getElementById("home-favs").innerHTML = favEps.map(tileHtml).join("");
 
-  const others = favEps.length ? ready.filter(e => !favs.has(e.id)) : ready;
+  const others = (favEps.length ? ready.filter(e => !favs.has(e.id)) : ready).sort(byNewest);
+  const HOME_LIB = 8;
   const rs = document.getElementById("home-ready-section");
   rs.style.display = others.length ? "block" : "none";
-  if (others.length) document.getElementById("home-ready").innerHTML = others.map(tileHtml).join("");
+  if (others.length) document.getElementById("home-ready").innerHTML = others.slice(0, HOME_LIB).map(tileHtml).join("");
+  const more = document.getElementById("lib-more");
+  if (more) more.textContent = ready.length > HOME_LIB ? `See all ${ready.length} →` : "";
 
   document.getElementById("home-empty").style.display = ready.length ? "none" : "block";
 }
 
 // Kept as an alias — several flows call loadRandom() to refresh the home view
 function loadRandom(){ renderHomeRows(); }
+
+function showAllBreakdowns(){
+  showTab("browse");
+  if (podFilter !== "all") setPodFilter("all");
+  document.getElementById("search-input").value = "";
+  filterNow("");
+  setPageFilter("ready");
+  window.scrollTo({ top: 0 });
+}
 
 function surpriseMe(){
   const ready = episodes.filter(e => summaries[e.id]);
@@ -1993,9 +2075,22 @@ function filterEps(){
   clearTimeout(filterTimer);
   filterTimer = setTimeout(() => filterNow(document.getElementById("search-input").value), 160);
 }
+let searchRank = null;   // { epId: score } while a search is active
 function filterNow(qRaw){
   const q = (qRaw||"").toLowerCase().trim();
-  filtered = q ? episodes.filter(e => epBlob(e).includes(q)) : [...episodes];
+  if (!q) { filtered = [...episodes]; searchRank = null; renderEpGroups(); return; }
+  const esc_ = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const wordStart = new RegExp("(^|[^a-z0-9])" + esc_);
+  searchRank = {};
+  filtered = episodes.filter(e => {
+    let score = 0;
+    if (wordStart.test(e.title.toLowerCase())) score += 4;
+    if (e.guest && wordStart.test(e.guest.toLowerCase())) score += 3;
+    if (score === 0 && wordStart.test(epBlob(e))) score += 1;
+    if (score && summaries[e.id]) score += 1;   // your breakdowns float up
+    if (score) searchRank[e.id] = score;
+    return score > 0;
+  });
   renderEpGroups();
 }
 
@@ -2089,6 +2184,7 @@ function visibleEps(){
   let eps = podFilter === "all" ? filtered : filtered.filter(e => (e.podcast || "doac") === podFilter);
   if (pageFilter === "ready") eps = eps.filter(e => summaries[e.id]);
   if (pageFilter === "favs")  eps = eps.filter(e => favs.has(e.id));
+  if (searchRank) return [...eps].sort((a,b) => (searchRank[b.id]||0) - (searchRank[a.id]||0) || byNewest(a,b));
   return [...eps].sort(byNewest);
 }
 
@@ -2173,13 +2269,26 @@ function renderEpGroups(){
     return;
   }
 
-  // ── All view: podcast dashboard
+  // ── All view: lens row, then either podcast cards or a flat list
+  const readyAll = episodes.filter(e => summaries[e.id]).length;
+  const favAll = episodes.filter(e => favs.has(e.id)).length;
+  const lens = (f, label, n) =>
+    `<button class="pill ${pageFilter===f?'on':''}" onclick="setPageFilter('${f}')">${label}${n!=null ? ` <span class="ct">${n}</span>` : ""}</button>`;
+  const lensRow = `<div class="pills" style="margin-bottom:0.8rem">${lens("all","Podcasts")}${lens("ready","Breakdowns",readyAll)}${favAll ? lens("favs","Favourites",favAll) : ""}</div>`;
+  if (pageFilter !== "all") {
+    const list = visibleEps();
+    el.innerHTML = lensRow + (list.length
+      ? `<div class="episode-list">${list.map(e => epItemHtml(e, true)).join("")}</div>`
+      : '<div class="empty"><i class="ti ti-microphone"></i>Nothing here yet.</div>');
+    renderBulkBar();
+    return;
+  }
   const keys = orderedPodKeys();
   const orphanKeys = [...new Set(episodes.map(e => e.podcast || "doac"))].filter(k => !PODCASTS[k]);
   if (!keys.length && !orphanKeys.length) {
     el.innerHTML = '<div class="empty"><i class="ti ti-microphone"></i>No podcasts yet. Tap <b>+</b> in the row above to add one.</div>';
   } else {
-    el.innerHTML = `<div class="tile-grid pod-grid">${[...keys, ...orphanKeys].map(podCardHtml).join("")}</div>`;
+    el.innerHTML = lensRow + `<div class="tile-grid pod-grid">${[...keys, ...orphanKeys].map(podCardHtml).join("")}</div>`;
   }
   renderBulkBar();
 }
@@ -2475,16 +2584,23 @@ function setSavedStatus(st){ savedStatus = savedStatus === st ? "all" : st; rend
 // One unified view over col (saved items) + pbItems (their action/status layer)
 function savedItems(){
   const pbById = new Map(pbItems.map(p => [p.itemId, p]));
-  return col.map(c => {
+  const inCol = new Set(col.map(c => c.itemId));
+  const fromCol = col.map(c => {
     const p = pbById.get(c.itemId);
     return { ...c, area: p?.area || null, action: p?.action || "", status: p?.status || null, addedAt: p?.addedAt || "" };
   });
+  const orphans = pbItems.filter(p => !inCol.has(p.itemId)).map(p => ({
+    itemId: p.itemId, type: p.type || p.itemId.split("::")[1] || "", typeLabel: p.typeLabel || "Insight",
+    text: p.text, sourceTitle: p.sourceTitle, sourceEpId: p.sourceEpId || p.itemId.split("::")[0],
+    area: p.area || null, action: p.action || "", status: p.status || "todo", addedAt: p.addedAt || ""
+  }));
+  return [...fromCol, ...orphans];
 }
 
 function savedCardHtml(item){
   const m = sectionMeta(item.type);
   const area = item.area ? (LIFE_AREAS[item.area] || LIFE_AREAS.other) : null;
-  const text = item.type === "best_quotes" ? `"${esc(item.text)}"` : esc(item.text);
+  const text = esc(item.text);
   const statusBtns = item.status !== null ? STATUSES.map(st =>
     `<button class="status-btn ${item.status===st.key?'active-'+st.key:''}" onclick="setStatus('${escAttr(item.itemId)}','${st.key}')">${st.label}</button>`
   ).join("") : "";
@@ -2494,7 +2610,7 @@ function savedCardHtml(item){
       <span class="col-type"><i class="ti ${m.icon}"></i> ${esc(item.typeLabel)}</span>
       <button class="icon-btn saved-x" onclick="removeSavedItem('${escAttr(item.itemId)}')" title="Remove"><i class="ti ti-x"></i></button>
     </div>
-    <div class="pb-insight">${text}</div>
+    <div class="pb-insight ${item.type === "best_quotes" ? "is-quote" : ""}">${text}</div>
     ${item.action
       ? `<div class="pb-action-label"><i class="ti ti-arrow-right"></i> Your action</div><div class="pb-action">${esc(item.action)}</div>`
       : item.status !== null ? `<div class="pb-action loading">Generating your action commitment…</div>` : ""}
@@ -2543,6 +2659,7 @@ function renderSaved(){
   }
 
   // Grouped by area when unfiltered — the categorised view
+  el.classList.toggle("saved-grouped", savedArea === "all" && !q && savedStatus === "all");
   if (savedArea === "all" && !q && savedStatus === "all") {
     const groups = {};
     items.forEach(i => { const k = i.area || "other"; (groups[k] = groups[k] || []).push(i); });
@@ -2650,7 +2767,13 @@ function renderWeeklyFocus(){
   if (stale || isEmpty) refreshWeeklyFocus();
 
   const section = document.getElementById("weekly-focus-section");
-  const items = Object.values(weeklyFocus.items || {}).filter(Boolean);
+  const live = new Map(pbItems.map(p => [p.itemId, p]));
+  let items = Object.values(weeklyFocus.items || {}).filter(Boolean)
+    .map(it => live.get(it.itemId)).filter(it => it && it.status !== "done");
+  if (!items.length && pbItems.some(p => p.status !== "done")) {
+    refreshWeeklyFocus();
+    items = Object.values(weeklyFocus.items || {}).filter(Boolean);
+  }
   if (!items.length) { section.style.display = "none"; return; }
   section.style.display = "block";
   document.getElementById("weekly-focus-row").innerHTML = items.map(item => {
