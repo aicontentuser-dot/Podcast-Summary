@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+\<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -486,6 +486,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .saved-grouped .pb-area-tag{display:none;}
 .lib-more{background:none;border:none;font:inherit;font-size:12.5px;font-weight:600;color:var(--accent-text);cursor:pointer;padding:0;}
 .lib-more:hover{text-decoration:underline;}
+.shelf-sec{margin-bottom:1.5rem;}
+.shelf-h{display:flex;align-items:center;gap:7px;margin-bottom:0.65rem;}
+.shelf-h i{font-size:16px;color:var(--accent-text);}
+.shelf-h h2{font-size:14px;font-weight:700;}
+.shelf-ct{font-size:12px;color:var(--text-3);}
+.shelf-h .lib-more{margin-left:auto;}
+.shelf{display:grid;grid-auto-flow:column;grid-auto-columns:158px;gap:10px;overflow-x:auto;scroll-snap-type:x proximity;padding:3px 3px 6px;margin:-3px -3px 0;scrollbar-width:none;}
+.shelf::-webkit-scrollbar{display:none;}
+.shelf>.tile{scroll-snap-align:start;}
+.type-h{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;color:var(--text-2);margin:1.2rem 0 0.6rem;}
+.pills + .type-h{margin-top:0.2rem;}
+.type-h i{font-size:15px;color:var(--accent-text);}
+.type-h .th-ct{font-weight:500;color:var(--text-3);}
 .reader-actions{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 0.9rem;}
 .reader-foot{display:flex;justify-content:flex-end;margin-top:1rem;}
 .settings-sec{margin-bottom:1rem;}
@@ -509,6 +522,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
   .nav button i{display:block;font-size:21px;}
   .nav button.active{background:none;box-shadow:none;color:var(--accent-text);}
   .toast{bottom:calc(76px + env(safe-area-inset-bottom));}
+  .topic-cloud{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;}
+  .topic-cloud::-webkit-scrollbar{display:none;}
+  .topic-chip{flex-shrink:0;white-space:nowrap;}
   .bulk-bar{padding-bottom:calc(72px + env(safe-area-inset-bottom));}
   .summary-panel{background:none;border:none;box-shadow:none;padding:0;margin-top:0;}
   .summary-panel::before{display:none;}
@@ -530,6 +546,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
   .tile-grid{grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:12px;}
   .pod-grid{grid-template-columns:repeat(auto-fill,minmax(165px,1fr));}
   .pod-rail{flex-wrap:wrap;overflow:visible;}
+  .shelf{grid-auto-flow:row;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));grid-template-rows:auto;grid-auto-rows:0;grid-auto-columns:auto;row-gap:0;column-gap:12px;overflow:hidden;scroll-snap-type:none;padding:3px 3px 0;}
   #weekly-focus-row{flex-wrap:wrap;overflow:visible;}
   .summary-panel{max-width:800px;}
   .modal{max-width:480px;}
@@ -604,15 +621,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
   <div id="today-new"></div>
   <div id="home-topics"></div>
 
-  <div id="home-favs-section" style="display:none">
-    <div class="row-header" style="margin-top:0.4rem"><h2>Favourites</h2></div>
-    <div class="tile-grid" id="home-favs"></div>
-  </div>
-
-  <div id="home-ready-section" style="display:none">
-    <div class="row-header"><h2>Recent breakdowns</h2><button class="lib-more" id="lib-more" onclick="showAllBreakdowns()"></button></div>
-    <div class="tile-grid" id="home-ready"></div>
-  </div>
+  <div id="home-shelves"></div>
 
   <div class="empty" id="home-empty" style="display:none">
     <i class="ti ti-sparkles"></i>No breakdowns yet.<br>
@@ -1057,6 +1066,7 @@ let selectMode = false;                // bulk-select mode on the episode list
 let selectedEps = new Set();           // episode ids ticked for bulk generate
 let feedCache = {};                    // { podKey: { items, fetchedAt } } — full feed history
 let pageFilter = "all";                // per-podcast page filter: all | ready | favs
+let typeFilter = "all";                // All-view type filter: all | interview | news | education | business
 let bulk = { active:false, total:0, done:0, failed:[], cancelled:false, current:"" };
 let bulkResult = null;                 // { ok, failed:[] } — shown in bar until dismissed
 let currentTab = "home";
@@ -1680,6 +1690,26 @@ function refreshOpenBreakdowns(epId){
 /* ════════════════════════════════════════════════════════
    10. HOME TAB
    ════════════════════════════════════════════════════════ */
+const TYPE_ORDER = ["interview","education","business","news"];
+const TYPE_META = {
+  interview: { label:"Interviews", icon:"ti-microphone-2" },
+  education: { label:"Learning",   icon:"ti-school" },
+  business:  { label:"Business",   icon:"ti-building-store" },
+  news:      { label:"News",       icon:"ti-news" },
+  other:     { label:"Other",      icon:"ti-tag" }
+};
+const SHELF_N = 10;   // tiles per shelf (phones scroll through them; desktop shows the first row)
+
+function shelfHtml(title, icon, eps, seeAllArgs){
+  if (!eps.length) return "";
+  return `<div class="shelf-sec">
+    <div class="shelf-h"><i class="ti ${icon}"></i><h2>${esc(title)}</h2><span class="shelf-ct">${eps.length}</span>
+      ${eps.length > 4 ? `<button class="lib-more" onclick="showAllBreakdowns(${seeAllArgs})">See all →</button>` : ""}
+    </div>
+    <div class="shelf">${eps.slice(0, SHELF_N).map(tileHtml).join("")}</div>
+  </div>`;
+}
+
 function tileHtml(ep){
   const p = getPodcast(ep.podcast);
   return `<div class="tile" onclick="openEpFromHome('${escAttr(ep.id)}')">
@@ -1889,17 +1919,13 @@ function renderHomeRows(){
   if (openCt) stats.push(`${openCt} to act on`);
   document.getElementById("home-stats").textContent = stats.join(" · ") || "Nothing here yet";
 
-  const fs = document.getElementById("home-favs-section");
-  fs.style.display = favEps.length ? "block" : "none";
-  if (favEps.length) document.getElementById("home-favs").innerHTML = favEps.map(tileHtml).join("");
-
-  const others = (favEps.length ? ready.filter(e => !favs.has(e.id)) : ready).sort(byNewest);
-  const HOME_LIB = 8;
-  const rs = document.getElementById("home-ready-section");
-  rs.style.display = others.length ? "block" : "none";
-  if (others.length) document.getElementById("home-ready").innerHTML = others.slice(0, HOME_LIB).map(tileHtml).join("");
-  const more = document.getElementById("lib-more");
-  if (more) more.textContent = ready.length > HOME_LIB ? `See all ${ready.length} →` : "";
+  // Shelves: favourites first, then one per podcast type (newest first)
+  const newest = ready.slice().sort(byNewest);
+  const byType = {};
+  newest.forEach(e => { const t = TYPE_META[getPodType(e.podcast || "doac")] ? getPodType(e.podcast || "doac") : "other"; (byType[t] = byType[t] || []).push(e); });
+  document.getElementById("home-shelves").innerHTML =
+    shelfHtml("Favourites", "ti-heart", newest.filter(e => favs.has(e.id)), "'all','favs'")
+    + [...TYPE_ORDER, "other"].map(t => shelfHtml(TYPE_META[t].label, TYPE_META[t].icon, byType[t] || [], `'${t}'`)).join("");
 
   document.getElementById("home-empty").style.display = ready.length ? "none" : "block";
 }
@@ -1907,12 +1933,14 @@ function renderHomeRows(){
 // Kept as an alias — several flows call loadRandom() to refresh the home view
 function loadRandom(){ renderHomeRows(); }
 
-function showAllBreakdowns(){
+function showAllBreakdowns(type, lens){
   showTab("browse");
   if (podFilter !== "all") setPodFilter("all");
   document.getElementById("search-input").value = "";
   filterNow("");
-  setPageFilter("ready");
+  setPageFilter(lens || "ready");
+  typeFilter = type || "all";
+  renderEpGroups();
   window.scrollTo({ top: 0 });
 }
 
@@ -2152,6 +2180,7 @@ function setPodFilter(k){
   }
   podFilter = k;
   pageFilter = "all";
+  typeFilter = "all";
   if (selectMode) exitSelectMode(false);
   browseScrollY = 0;
   if (pushedReader) { pushedReader = false; ignorePop++; history.back(); }
@@ -2160,7 +2189,34 @@ function setPodFilter(k){
 }
 function setPageFilter(f){
   pageFilter = f;
+  if (f === "all") typeFilter = "all";
   renderEpGroups();
+}
+function setTypeFilter(t){ typeFilter = t; renderEpGroups(); }
+
+// Episodes the current lens + search would list, before the type filter narrows them
+function lensBase(){
+  let eps = filtered;
+  if (pageFilter === "ready") eps = eps.filter(e => summaries[e.id]);
+  if (pageFilter === "favs")  eps = eps.filter(e => favs.has(e.id));
+  return eps;
+}
+function typeCounts(){
+  const c = {};
+  lensBase().forEach(e => { const t = getPodType(e.podcast || "doac"); const k = TYPE_META[t] ? t : "other"; c[k] = (c[k]||0) + 1; });
+  return c;
+}
+// A type filter must never hide everything silently
+function healTypeFilter(){
+  if (typeFilter !== "all" && !typeCounts()[typeFilter]) typeFilter = "all";
+}
+function typePillsHtml(){
+  const c = typeCounts();
+  const present = [...TYPE_ORDER, "other"].filter(t => c[t]);
+  if (present.length < 2) return "";
+  const pill = (t, label, n) =>
+    `<button class="pill pill-sm ${typeFilter===t?'on':''}" onclick="setTypeFilter('${t}')">${label}${n!=null ? ` <span class="ct">${n}</span>` : ""}</button>`;
+  return `<div class="pills pills-sub">${pill("all","All types")}${present.map(t => pill(t, TYPE_META[t].label, c[t])).join("")}</div>`;
 }
 
 function renderPodRail(){
@@ -2184,6 +2240,7 @@ function visibleEps(){
   let eps = podFilter === "all" ? filtered : filtered.filter(e => (e.podcast || "doac") === podFilter);
   if (pageFilter === "ready") eps = eps.filter(e => summaries[e.id]);
   if (pageFilter === "favs")  eps = eps.filter(e => favs.has(e.id));
+  if (podFilter === "all" && typeFilter !== "all") eps = eps.filter(e => getPodType(e.podcast || "doac") === typeFilter);
   if (searchRank) return [...eps].sort((a,b) => (searchRank[b.id]||0) - (searchRank[a.id]||0) || byNewest(a,b));
   return [...eps].sort(byNewest);
 }
@@ -2258,26 +2315,27 @@ function renderEpGroups(){
     return;
   }
 
-  // ── All view: searching → flat results across every podcast
-  if (q) {
-    const results = visibleEps().slice(0, 100);
-    el.innerHTML = results.length
-      ? `<div class="search-count">${results.length}${results.length===100?"+":""} result${results.length!==1?"s":""} across your catalogues</div>
-         <div class="episode-list">${results.map(e => epItemHtml(e, true)).join("")}</div>`
-      : '<div class="empty"><i class="ti ti-search"></i>No episodes match. Import more catalogues to widen the net.</div>';
-    renderBulkBar();
-    return;
-  }
-
-  // ── All view: lens row, then either podcast cards or a flat list
+  // ── All view: one lens row (+ type row on flat lists), then search results, a flat list, or podcast cards
+  healTypeFilter();
   const readyAll = episodes.filter(e => summaries[e.id]).length;
   const favAll = episodes.filter(e => favs.has(e.id)).length;
   const lens = (f, label, n) =>
     `<button class="pill ${pageFilter===f?'on':''}" onclick="setPageFilter('${f}')">${label}${n!=null ? ` <span class="ct">${n}</span>` : ""}</button>`;
-  const lensRow = `<div class="pills" style="margin-bottom:0.8rem">${lens("all","Podcasts")}${lens("ready","Breakdowns",readyAll)}${favAll ? lens("favs","Favourites",favAll) : ""}</div>`;
+  const lensRow = `<div class="pills" style="margin-bottom:0.8rem">${lens("all", q ? "All results" : "Podcasts")}${lens("ready","Breakdowns",readyAll)}${favAll ? lens("favs","Favourites",favAll) : ""}</div>`;
+  const typeRow = (q || pageFilter !== "all") ? typePillsHtml() : "";
+
+  if (q) {
+    const results = visibleEps().slice(0, 100);
+    el.innerHTML = lensRow + typeRow + (results.length
+      ? `<div class="search-count">${results.length}${results.length===100?"+":""} result${results.length!==1?"s":""} across your catalogues</div>
+         <div class="episode-list">${results.map(e => epItemHtml(e, true)).join("")}</div>`
+      : '<div class="empty"><i class="ti ti-search"></i>No episodes match. Import more catalogues to widen the net.</div>');
+    renderBulkBar();
+    return;
+  }
   if (pageFilter !== "all") {
     const list = visibleEps();
-    el.innerHTML = lensRow + (list.length
+    el.innerHTML = lensRow + typeRow + (list.length
       ? `<div class="episode-list">${list.map(e => epItemHtml(e, true)).join("")}</div>`
       : '<div class="empty"><i class="ti ti-microphone"></i>Nothing here yet.</div>');
     renderBulkBar();
@@ -2288,7 +2346,15 @@ function renderEpGroups(){
   if (!keys.length && !orphanKeys.length) {
     el.innerHTML = '<div class="empty"><i class="ti ti-microphone"></i>No podcasts yet. Tap <b>+</b> in the row above to add one.</div>';
   } else {
-    el.innerHTML = lensRow + `<div class="tile-grid pod-grid">${[...keys, ...orphanKeys].map(podCardHtml).join("")}</div>`;
+    const groups = {};
+    [...keys, ...orphanKeys].forEach(k => {
+      const t = PODCASTS[k] && TYPE_META[getPodType(k)] ? getPodType(k) : "other";
+      (groups[t] = groups[t] || []).push(k);
+    });
+    const gKeys = [...TYPE_ORDER, "other"].filter(t => groups[t]);
+    el.innerHTML = lensRow + gKeys.map(t =>
+      (gKeys.length > 1 ? `<div class="type-h"><i class="ti ${TYPE_META[t].icon}"></i>${TYPE_META[t].label} <span class="th-ct">${groups[t].length}</span></div>` : "")
+      + `<div class="tile-grid pod-grid">${groups[t].map(podCardHtml).join("")}</div>`).join("");
   }
   renderBulkBar();
 }
