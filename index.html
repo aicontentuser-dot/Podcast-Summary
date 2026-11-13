@@ -1,4 +1,4 @@
-\<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -293,6 +293,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 /* News story card inside a breakdown */
 .story-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;}
 .story-headline{font-size:14px;font-weight:600;margin-bottom:5px;}
+.story-what{font-size:14px;line-height:1.55;color:var(--text);margin-bottom:8px;}
 .story-why{font-size:13px;color:var(--text-2);margin-bottom:4px;}
 .story-why b{font-weight:600;color:var(--accent-text);}
 .story-watch{font-size:13px;color:var(--text-2);}
@@ -888,9 +889,9 @@ Return ONLY valid JSON:
   news: {
     label: "News / current affairs",
     icon: "ti-news",
-    maxTokens: 2000,
+    maxTokens: 2800,
     sections: [
-      { key:"top_stories",      title:"Top stories",   icon:"ti-news",        type:"stories", cls:"sec-summary", icls:"ic-summary" },
+      { key:"top_stories",     title:"Top stories",   icon:"ti-news",        type:"stories", cls:"sec-summary", icls:"ic-summary" },
       { key:"quick_context",    title:"Quick context", icon:"ti-info-circle", type:"list",    cls:"sec-ideas",   icls:"ic-ideas"   },
       { key:"what_to_watch",    title:"What to watch", icon:"ti-eye",         type:"list",    cls:"sec-steps",   icls:"ic-steps"   },
       { key:"one_minute_recap", title:"Recap",         icon:"ti-clock",       type:"text",    cls:"sec-recap",   icls:"ic-recap"   }
@@ -901,7 +902,8 @@ Return ONLY valid JSON:
 STORY DISCOVERY (do this before writing anything): a single conversation usually hides several independent newsworthy stories — main topics, but also announcements, milestones, personnel moves, disputes, and meta-stories about the outlet or industry itself. Identify every possible story, rank them by newsworthiness, then write up the strongest 3-5 as SEPARATE stories. Never fold a genuine story into another story's context.
 
 For each story:
-- headline: punchy newspaper style that makes a claim or captures tension — never a flat descriptive label. ("X Argues Critics Have a Point — and It's Costing Them" not "Criticism Debate in Media")
+- headline: punchy newspaper style that states the news itself and captures its tension — never a flat descriptive label. ("X Argues Critics Have a Point — and It's Costing Them" not "Criticism Debate in Media")
+- what_happened: THE NEWS, stated plainly and FIRST. 2-4 sentences covering who did or said what, what actually happened, and the key facts, numbers, places and dates as given in the episode. Facts only: no opinion, no implications, no "why it matters" here. A reader who stops after this field must already know what the story is.
 - why_matters: infer, don't narrate. Who is affected, what changes, why an informed reader will care six months from now. Second-order implications beat restating what the hosts said.
 - what_watch: the concrete next development to look for — an event, decision, number, or date, not a vague theme.
 
@@ -912,7 +914,7 @@ one_minute_recap: a synthesis connecting the stories — the "so what" of the wh
 Prefer analysis over narration throughout. Do not merely restate what the speakers said.
 
 Return ONLY valid JSON:
-{"tags":["tag1","tag2"],"top_stories":[{"headline":"Story headline","why_matters":"Why this matters","what_watch":"What to watch next"}],"quick_context":["background context point"],"what_to_watch":["broader trend or follow-up to watch"],"one_minute_recap":"punchy recap of the whole episode"}`
+{"tags":["tag1","tag2"],"top_stories":[{"headline":"Story headline","what_happened":"What actually happened, plainly","why_matters":"Why this matters","what_watch":"What to watch next"}],"quick_context":["background context point"],"what_to_watch":["broader trend or follow-up to watch"],"one_minute_recap":"punchy recap of the whole episode"}`
   },
 
   education: {
@@ -1621,6 +1623,7 @@ function renderBreakdown(prefix, d, ep){
         const bookmarked = newsItems.some(n => n.itemId === `${ep.id}::news::${i}`);
         html += `<div class="story-card"><div class="bd-row"><div style="flex:1">
           <div class="story-headline">${esc(story.headline || "")}</div>
+          ${story.what_happened ? `<div class="story-what">${esc(story.what_happened)}</div>` : ""}
           ${story.why_matters ? `<div class="story-why"><b>Why it matters:</b> ${esc(story.why_matters)}</div>` : ""}
           ${story.what_watch ? `<div class="story-watch"><b>Watch:</b> ${esc(story.what_watch)}</div>` : ""}
         </div>
@@ -1749,7 +1752,7 @@ function digestForAsk(ep){
     d.practical_protocol?.length && "Protocol: " + d.practical_protocol.slice(0,4).join(" | "),
     d.action_steps?.length     && "Actions: "   + d.action_steps.slice(0,3).join(" | "),
     d.lessons_learned?.length  && "Lessons: "   + d.lessons_learned.slice(0,4).join(" | "),
-    d.top_stories?.length      && "Stories: "   + d.top_stories.slice(0,3).map(st => st.headline + " — " + (st.why_matters||"")).join(" | ")
+    d.top_stories?.length      && "Stories: "   + d.top_stories.slice(0,3).map(st => st.headline + " — " + (st.what_happened||st.why_matters||"")).join(" | ")
   ].filter(Boolean).join("\n");
   return `EPISODE: "${ep.title}" (${getPodcast(ep.podcast).name})\n${bits}`.slice(0, 1400);
 }
@@ -2089,7 +2092,7 @@ function epBlob(e){
         ...(d.science_behind||[]), ...(d.practical_protocol||[]), ...(d.myths_debunked||[]),
         ...(d.key_decisions||[]), ...(d.lessons_learned||[]), ...(d.quick_context||[]),
         ...(d.what_to_watch||[]),
-        ...(d.top_stories||[]).map(st => (st.headline||"") + " " + (st.why||""))
+        ...(d.top_stories||[]).map(st => (st.headline||"") + " " + (st.what_happened||"") + " " + (st.why_matters||""))
       ].filter(Boolean).join(" ");
     }
     blobCache[e.id] = t.toLowerCase();
@@ -2879,6 +2882,7 @@ function toggleNewsBookmark(epId, storyIdx){
   newsItems.unshift({
     itemId, storyIdx,
     headline: story.headline || "",
+    what: story.what_happened || "",
     why: story.why_matters || "",
     watch: story.what_watch || "",
     tags: summary.tags || [],
@@ -3103,6 +3107,7 @@ function renderNewsDigest(){
           <div class="nd-card-head">
             <div class="nd-card-body">
               <div class="nd-headline">${esc(n.headline)}</div>
+              ${n.what ? `<div class="story-what">${esc(n.what)}</div>` : ""}
               ${n.why ? `<div class="nd-why">${esc(n.why)}</div>` : ""}
               ${n.watch ? `<div class="nd-watch"><i class="ti ti-eye"></i>${esc(n.watch)}</div>` : ""}
             </div>
@@ -3421,8 +3426,9 @@ async function pushEpisodes(){
 // News stories serialise as: headline | Why: … | Watch: …  ///  next story…
 const STORY_SEP = " /// ", FIELD_SEP = " | ";
 function serialiseStories(stories){
-  return (stories || []).map(st =>
-    [st.headline, st.why_matters ? "Why: "+st.why_matters : "", st.what_watch ? "Watch: "+st.what_watch : ""]
+  const clean = s => s == null ? s : String(s).split(FIELD_SEP).join(" – ").split(STORY_SEP.trim()).join("/");
+  return (stories || []).map(st0 => { const st = { headline: clean(st0.headline), what_happened: clean(st0.what_happened), why_matters: clean(st0.why_matters), what_watch: clean(st0.what_watch) }; return st; }).map(st =>
+    [st.headline, st.what_happened ? "What: "+st.what_happened : "", st.why_matters ? "Why: "+st.why_matters : "", st.what_watch ? "Watch: "+st.what_watch : ""]
       .filter(Boolean).join(FIELD_SEP)
   ).join(STORY_SEP);
 }
@@ -3432,7 +3438,8 @@ function parseStories(str){
     const parts = chunk.split(FIELD_SEP);
     const story = { headline: parts[0] || "" };
     parts.slice(1).forEach(p => {
-      if (p.startsWith("Why: ")) story.why_matters = p.slice(5);
+      if (p.startsWith("What: ")) story.what_happened = p.slice(6);
+      else if (p.startsWith("Why: ")) story.why_matters = p.slice(5);
       else if (p.startsWith("Watch: ")) story.what_watch = p.slice(7);
     });
     return story;
@@ -3498,9 +3505,9 @@ async function pushCollection(){
 
 // Sheet 6: News Digest
 async function pushNewsDigest(){
-  const rows = [["Item ID","Headline","Why It Matters","What To Watch","Tags","Source Episode","Following","Saved At"]];
+  const rows = [["Item ID","Headline","Why It Matters","What To Watch","Tags","Source Episode","Following","Saved At","What Happened"]];
   newsItems.forEach(n => {
-    rows.push([n.itemId||"", n.headline||"", n.why||"", n.watch||"", (n.tags||[]).join(", "), n.sourceTitle||"", n.following ? "Yes" : "No", n.savedAt||""]);
+    rows.push([n.itemId||"", n.headline||"", n.why||"", n.watch||"", (n.tags||[]).join(", "), n.sourceTitle||"", n.following ? "Yes" : "No", n.savedAt||"", n.what||""]);
   });
   await writeSheet("News Digest", rows);
 }
@@ -3641,7 +3648,7 @@ async function loadFromSheets(silent){
           itemId:iid, headline:r[1]||"", why:r[2]||"", watch:r[3]||"",
           tags:(r[4]||"").split(", ").filter(Boolean),
           sourceTitle:r[5]||"", sourceEpId:iid.split("::")[0],
-          following:r[6]==="Yes", savedAt:r[7]||""
+          following:r[6]==="Yes", savedAt:r[7]||"", what:r[8]||""
         });
       });
       saveNews();
