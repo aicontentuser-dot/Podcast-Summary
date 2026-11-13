@@ -293,6 +293,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 /* News story card inside a breakdown */
 .story-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;}
 .story-headline{font-size:14px;font-weight:600;margin-bottom:5px;}
+.bd-note{font-size:12.5px;color:var(--text-2);margin:-2px 0 8px;padding:6px 10px;border-radius:8px;background:var(--surface-2,rgba(128,128,128,.12));}
+.bd-basis{font-size:12px;color:var(--text-2);margin-top:12px;opacity:.85;}
+.bd-item-text b{font-weight:600;}
 .story-what{font-size:14px;line-height:1.55;color:var(--text);margin-bottom:8px;}
 .story-why{font-size:13px;color:var(--text-2);margin-bottom:4px;}
 .story-why b{font-weight:600;color:var(--accent-text);}
@@ -863,6 +866,15 @@ function renderAiProviderUI(){
 /* ════════════════════════════════════════════════════════
    2. PODCAST TYPES — sections, prompts, token budgets
    ════════════════════════════════════════════════════════ */
+// Appended to every non-news prompt: honest about the source, and handles "N habits"-style titles
+const SOURCE_RULES = `
+
+SOURCE LIMITS: You have only the title, guest and show notes above. You did NOT hear the audio or read a transcript, so treat the show notes as the ground truth. Never invent quotes: best_quotes may contain only sentences that appear word-for-word in the show notes; if there are none, return []. Do not pad. If the source does not support a point, leave it out. Fewer accurate items beat filler. The five_min_read may be shorter than 400 words if that is all the source supports, and must not add invented detail.`;
+const LIST_RULE = `
+
+NUMBERED SETS: If the title or show notes promise a numbered set (for example "5 habits", "7 rules", "3 mistakes"), set list_title (for example "The 5 habits") and fill the_list with every item the source reveals, each written as "Name: one-sentence explanation". Include all N when the source gives them. If it gives only some, include only those; never invent the rest. key_ideas, action_steps and the recap must be consistent with the_list. If there is no numbered set, omit list_title and the_list.`;
+const LIST_SEC = { key:"the_list", title:"The list", icon:"ti-list-numbers", type:"list", cls:"sec-ideas", icls:"ic-ideas" };
+
 const PODCAST_TYPES = {
   interview: {
     label: "Interview / personal dev",
@@ -870,7 +882,8 @@ const PODCAST_TYPES = {
     maxTokens: 3000,
     sections: [
       { key:"executive_summary", title:"Summary",      icon:"ti-file-text", type:"text",   cls:"sec-summary", icls:"ic-summary" },
-      { key:"key_ideas",         title:"Key ideas",    icon:"ti-stars",     type:"list",   cls:"sec-ideas",   icls:"ic-ideas"   },
+      LIST_SEC,
+      { key:"key_ideas",        title:"Key ideas",    icon:"ti-stars",     type:"list",   cls:"sec-ideas",   icls:"ic-ideas"   },
       { key:"action_steps",      title:"Action steps", icon:"ti-checklist", type:"list",   cls:"sec-steps",   icls:"ic-steps"   },
       { key:"best_quotes",       title:"Best quotes",  icon:"ti-quote",     type:"quotes", cls:"sec-quotes",  icls:"ic-quotes"  },
       { key:"one_minute_recap",  title:"Recap",        icon:"ti-clock",     type:"text",   cls:"sec-recap",   icls:"ic-recap"   }
@@ -878,12 +891,12 @@ const PODCAST_TYPES = {
     prompt: (ep, podName, desc, note) =>
 `Analyse this ${podName} podcast episode: "${ep.title}"${ep.guest ? " featuring "+ep.guest : ""}.${desc}${note}
 
-Be concise (max 3 key ideas, 3 action steps, 2 quotes).
+key_ideas: every distinct idea the source supports (usually 4-8), each a specific claim, not a theme. action_steps: one concrete step for each idea that has one. best_quotes: see source limits.
 For one_big_idea: the single most valuable takeaway as ONE memorable sentence — if the listener remembers nothing else, this is it.
 For five_min_read: 400-500 word narrative article with subheadings (## prefix), flowing paragraphs, one pullquote (> prefix). Insightful, not a list.
 
 Return ONLY valid JSON:
-{"tags":["tag1","tag2"],"one_big_idea":"One memorable sentence","executive_summary":"2-3 sentence overview","key_ideas":["idea"],"action_steps":["step"],"best_quotes":["quote"],"one_minute_recap":"punchy recap","five_min_read":"## Heading\\n\\nText.\\n\\n> Pullquote.\\n\\n## Heading\\n\\nText."}`
+{"tags":["tag1","tag2"],"one_big_idea":"One memorable sentence","executive_summary":"2-3 sentence overview","list_title":"The 5 habits (only if a numbered set is promised)","the_list":["Name: one-sentence explanation"],"key_ideas":["idea"],"action_steps":["step"],"best_quotes":["quote"],"one_minute_recap":"punchy recap","five_min_read":"## Heading\\n\\nText.\\n\\n> Pullquote.\\n\\n## Heading\\n\\nText."}`
   },
 
   news: {
@@ -923,6 +936,7 @@ Return ONLY valid JSON:
     maxTokens: 3000,
     sections: [
       { key:"core_concept",       title:"Core concept",       icon:"ti-bulb",      type:"text",   cls:"sec-summary", icls:"ic-summary" },
+      LIST_SEC,
       { key:"science_behind",     title:"The science",        icon:"ti-atom",      type:"list",   cls:"sec-ideas",   icls:"ic-ideas"   },
       { key:"practical_protocol", title:"Practical protocol", icon:"ti-checklist", type:"list",   cls:"sec-steps",   icls:"ic-steps"   },
       { key:"myths_debunked",     title:"Myths debunked",     icon:"ti-circle-x",  type:"list",   cls:"sec-quotes",  icls:"ic-quotes"  },
@@ -936,7 +950,7 @@ Extract the core concept clearly, the science/evidence behind it, a practical pr
 For one_big_idea: the single most valuable takeaway as ONE memorable sentence — if the listener remembers nothing else, this is it.
 
 Return ONLY valid JSON:
-{"tags":["tag1","tag2"],"one_big_idea":"One memorable sentence","core_concept":"Clear 2-3 sentence explanation of the main concept","science_behind":["key scientific finding or mechanism"],"practical_protocol":["specific actionable protocol step"],"myths_debunked":["Myth: X. Reality: Y."],"best_quotes":["quote"],"one_minute_recap":"punchy recap","five_min_read":"## Heading\\n\\nText.\\n\\n> Pullquote.\\n\\n## Heading\\n\\nText."}`
+{"tags":["tag1","tag2"],"one_big_idea":"One memorable sentence","list_title":"The 5 habits (only if a numbered set is promised)","the_list":["Name: one-sentence explanation"],"core_concept":"Clear 2-3 sentence explanation of the main concept","science_behind":["key scientific finding or mechanism"],"practical_protocol":["specific actionable protocol step"],"myths_debunked":["Myth: X. Reality: Y."],"best_quotes":["quote"],"one_minute_recap":"punchy recap","five_min_read":"## Heading\\n\\nText.\\n\\n> Pullquote.\\n\\n## Heading\\n\\nText."}`
   },
 
   business: {
@@ -945,6 +959,7 @@ Return ONLY valid JSON:
     maxTokens: 3000,
     sections: [
       { key:"the_story",        title:"The story",       icon:"ti-book-2",     type:"text",   cls:"sec-summary", icls:"ic-summary" },
+      LIST_SEC,
       { key:"key_decisions",    title:"Key decisions",   icon:"ti-git-branch", type:"list",   cls:"sec-ideas",   icls:"ic-ideas"   },
       { key:"lessons_learned",  title:"Lessons learned", icon:"ti-school",     type:"list",   cls:"sec-steps",   icls:"ic-steps"   },
       { key:"best_quotes",      title:"Best quotes",     icon:"ti-quote",      type:"quotes", cls:"sec-quotes",  icls:"ic-quotes"  },
@@ -958,7 +973,7 @@ For one_big_idea: the single most valuable takeaway as ONE memorable sentence �
 For five_min_read: engaging 400-500 word narrative with subheadings (## prefix) and one pullquote (> prefix).
 
 Return ONLY valid JSON:
-{"tags":["tag1","tag2"],"one_big_idea":"One memorable sentence","the_story":"2-3 sentence narrative of what this episode covers","key_decisions":["decision with outcome"],"lessons_learned":["concrete lesson"],"best_quotes":["quote"],"one_minute_recap":"punchy recap","five_min_read":"## Heading\\n\\nText.\\n\\n> Pullquote.\\n\\n## Heading\\n\\nText."}`
+{"tags":["tag1","tag2"],"one_big_idea":"One memorable sentence","list_title":"The 5 habits (only if a numbered set is promised)","the_list":["Name: one-sentence explanation"],"the_story":"2-3 sentence narrative of what this episode covers","key_decisions":["decision with outcome"],"lessons_learned":["concrete lesson"],"best_quotes":["quote"],"one_minute_recap":"punchy recap","five_min_read":"## Heading\\n\\nText.\\n\\n> Pullquote.\\n\\n## Heading\\n\\nText."}`
   }
 };
 
@@ -1269,12 +1284,14 @@ async function aiRequestRaw(prompt, maxTokens, ptype, engineKey){
 
 // Catalogued episodes store no show notes; pull them from the feed at generate time
 async function enrichFromFeed(ep){
-  if (ep.desc || !ep.podcast) return;
+  // Skip when notes exist — unless they look cut at the old 500-char limit, then refetch the full text
+  const oldCut = ep.desc && ep.desc.length >= 480 && ep.desc.length <= 500;
+  if ((ep.desc && !oldCut) || !ep.podcast) return;
   try {
     const feed = await getFullFeed(ep.podcast);
     const hit = feed.find(fe => normTitle(fe.title) === normTitle(ep.title));
     if (hit) {
-      ep.desc = hit.desc || "";
+      if (hit.desc && hit.desc.length >= (ep.desc||"").length) ep.desc = hit.desc;
       if (!ep.link) ep.link = hit.link || "";
       if (!ep.guest) ep.guest = hit.guest || "";
       if (!ep.date) { ep.date = hit.date || ""; ep.ts = hit.ts || ep.ts || 0; }
@@ -1286,14 +1303,16 @@ async function enrichFromFeed(ep){
 async function callAI(ep){
   await enrichFromFeed(ep);
   const type = getTypeDef(ep);
-  const desc = ep.desc ? "\nShow notes: " + ep.desc.slice(0,600) : "";
-  const note = !ep.desc ? "\nNo description provided — use your general knowledge of this episode/guest if recognisable, else give a plausible general take." : "";
-  const prompt = type.prompt(ep, getPodcast(ep.podcast).name, desc, note);
+  const desc = ep.desc ? "\nShow notes: " + ep.desc.slice(0,3500) : "";
+  const note = !ep.desc ? "\nNo show notes are available. Work only from the title and guest. If you confidently recognise this specific episode, you may use what you know; otherwise keep the output short and general and do not invent specifics." : "";
+  const prompt = type.prompt(ep, getPodcast(ep.podcast).name, desc, note) + (type === PODCAST_TYPES.news ? "" : SOURCE_RULES + LIST_RULE);
   const ptype = getPodType(ep.podcast);
   let r = await aiRequest(prompt, type.maxTokens, ptype);
   if (r.truncated) r = await aiRequest(prompt, Math.min(type.maxTokens * 2, 6000), ptype);   // response was cut off — one retry with more room
   if (r.truncated) throw new Error("The AI response was cut off twice — try again in a moment.");
-  return extractJson(r.text);
+  const out = extractJson(r.text);
+  if (out && typeof out === "object") out.basis = ep.desc ? "notes" : "title";   // what the breakdown was actually built from
+  return out;
 }
 
 /* ════════════════════════════════════════════════════════
@@ -1434,7 +1453,7 @@ function parseRssFeed(xmlText, limit = Infinity){
     const link = it.querySelector("link")?.textContent?.trim()
       || it.querySelector("enclosure")?.getAttribute("url") || "";
     const descEl = it.querySelector("description");
-    const desc = descEl ? (descEl.textContent || "").replace(/<[^>]+>/g,"").replace(/\s+/g," ").trim().slice(0,500) : "";
+    const desc = descEl ? (descEl.textContent || "").replace(/<[^>]+>/g,"").replace(/\s+/g," ").trim().slice(0,4000) : "";
     const d = pubDate ? new Date(pubDate) : null;
     const ts = d && !isNaN(d) ? d.getTime() : 0;
     const date = d && !isNaN(d) ? d.toLocaleDateString("en-GB",{ day:"numeric", month:"short", year:"numeric" }) : "";
@@ -1599,7 +1618,11 @@ function renderBreakdown(prefix, d, ep){
   sections.forEach(sec => {
     const v = d[sec.key];
     if (!v || (Array.isArray(v) && !v.length)) return;
-    html += `<div class="bd-sec ${sec.cls}"><div class="bd-head"><div class="bd-icon ${sec.icls}"><i class="ti ${sec.icon}"></i></div><h3>${sec.title}</h3></div>`;
+    html += `<div class="bd-sec ${sec.cls}"><div class="bd-head"><div class="bd-icon ${sec.icls}"><i class="ti ${sec.icon}"></i></div><h3>${esc(sec.key === "the_list" && d.list_title ? d.list_title : sec.title)}</h3></div>`;
+    if (sec.key === "the_list") {
+      const promised = parseInt((String(d.list_title||"").match(/\d+/)||[])[0], 10);
+      if (promised && v.length < promised) html += `<div class="bd-note">The title promises ${promised}, but the show notes only reveal ${v.length}. Listen to the episode for the rest.</div>`;
+    }
 
     if (sec.type === "text") {
       html += `<div class="bd-row"><p class="bd-text">${esc(v)}</p>${saveBtnHtml(ep.id, sec.key, 0)}</div>`;
@@ -1607,7 +1630,9 @@ function renderBreakdown(prefix, d, ep){
     } else if (sec.type === "list") {
       html += '<ul class="bd-list">';
       v.forEach((item, i) => {
-        html += `<li class="bd-item"><span class="bd-num">${i+1}.</span><span class="bd-item-text">${esc(item)}</span>${saveBtnHtml(ep.id, sec.key, i)}</li>`;
+        let body = esc(item);
+        if (sec.key === "the_list") { const m = String(item).match(/^(.{1,80}?):\s+([\s\S]+)$/); if (m) body = `<b>${esc(m[1])}</b> ${esc(m[2])}`; }
+        html += `<li class="bd-item"><span class="bd-num">${i+1}.</span><span class="bd-item-text">${body}</span>${saveBtnHtml(ep.id, sec.key, i)}</li>`;
       });
       html += '</ul>';
 
@@ -1635,6 +1660,7 @@ function renderBreakdown(prefix, d, ep){
   });
   html += '</div>';
   if (d.tags?.length) html += '<div class="tags">' + d.tags.map(t => `<button class="tag tag-btn" onclick="searchByTag('${escAttr(t)}')" title="Find everything about ${escAttr(t)}">${esc(t)}</button>`).join("") + '</div>';
+  if (d.basis) html += `<div class="bd-basis"><i class="ti ti-info-circle"></i> ${d.basis === "notes" ? "Built from the episode title and show notes, not the audio." : "Built from the title only. No show notes were available."}</div>`;
   html += '</div>';
 
   // 5-min read pane
@@ -1747,6 +1773,7 @@ function digestForAsk(ep){
   const bits = [
     d.one_big_idea && "Big idea: " + d.one_big_idea,
     (d.executive_summary || d.core_concept || d.the_story || "").slice(0, 350),
+    d.the_list?.length         && (d.list_title||"List") + ": " + d.the_list.slice(0,8).join(" | "),
     d.key_ideas?.length        && "Ideas: "     + d.key_ideas.slice(0,4).join(" | "),
     d.science_behind?.length   && "Science: "   + d.science_behind.slice(0,4).join(" | "),
     d.practical_protocol?.length && "Protocol: " + d.practical_protocol.slice(0,4).join(" | "),
@@ -2091,7 +2118,7 @@ function epBlob(e){
         ...(d.key_ideas||[]), ...(d.action_steps||[]), ...(d.best_quotes||[]),
         ...(d.science_behind||[]), ...(d.practical_protocol||[]), ...(d.myths_debunked||[]),
         ...(d.key_decisions||[]), ...(d.lessons_learned||[]), ...(d.quick_context||[]),
-        ...(d.what_to_watch||[]),
+        ...(d.what_to_watch||[]), ...(d.the_list||[]),
         ...(d.top_stories||[]).map(st => (st.headline||"") + " " + (st.what_happened||"") + " " + (st.why_matters||""))
       ].filter(Boolean).join(" ");
     }
@@ -3452,7 +3479,8 @@ const SUMMARY_HEADER = [
   "Top Stories","Quick Context","What To Watch",                        // news
   "Core Concept","The Science","Practical Protocol","Myths Debunked",   // education
   "The Story","Key Decisions","Lessons Learned",                        // business
-  "Best Quotes","Recap","5-Min Read","One Big Idea"                     // universal
+  "Best Quotes","Recap","5-Min Read","One Big Idea",                    // universal
+  "The List","List Title","Basis"                                       // numbered sets + source basis
 ];
 
 async function pushSummaries(){
@@ -3480,7 +3508,10 @@ async function pushSummaries(){
       (s.best_quotes||[]).join(FIELD_SEP),
       s.one_minute_recap||"",
       s.five_min_read||"",
-      s.one_big_idea||""
+      s.one_big_idea||"",
+      (s.the_list||[]).join(FIELD_SEP),
+      s.list_title||"",
+      s.basis||""
     ]);
   });
   await writeSheet("Summaries", rows);
@@ -3602,7 +3633,10 @@ async function loadFromSheets(silent){
           best_quotes: splitList(18),
           one_minute_recap: r[19]||"",
           five_min_read: r[20]||"",
-          one_big_idea: r[21]||""
+          one_big_idea: r[21]||"",
+          the_list: splitList(22),
+          list_title: r[23]||"",
+          basis: r[24]||""
         };
       });
       invalidateBlob();
