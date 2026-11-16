@@ -514,7 +514,43 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .settings-sec .seg button{flex:1;}
 
 /* ── Phone & tablet: bottom tab bar, flatter reader ── */
+/* ── Polish pass: tiles, idea card, reader type ── */
+.tile.t-ep{position:relative;overflow:hidden;padding-top:1rem;}
+.tile.t-ep::before{content:'';position:absolute;left:0;right:0;top:0;height:3px;background:var(--pc,var(--accent));}
+.tile.t-ep .tile-title{-webkit-line-clamp:2;flex:none;font-size:13.5px;}
+.tile-idea{font-size:12px;line-height:1.5;color:var(--text-2);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;flex:1;}
+.tile.t-ep .tile-foot{margin-top:auto;}
+.unread-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);margin-left:auto;flex-shrink:0;}
+.shelf{grid-auto-columns:212px;}
+.idea-card{position:relative;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.2rem 1rem 1.35rem;margin-bottom:1.1rem;cursor:pointer;transition:border-color .12s;}
+.idea-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--pc,var(--accent));}
+.idea-card:hover{border-color:var(--border-strong);}
+.idea-h{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--accent-text);display:flex;align-items:center;gap:6px;margin-bottom:8px;}
+.idea-h .th-btn{margin-left:auto;background:none;border:none;color:var(--text-3);cursor:pointer;font-size:16px;padding:2px 4px;}
+.idea-text{font-size:18px;font-weight:650;line-height:1.45;letter-spacing:-0.01em;}
+.idea-src{display:flex;align-items:center;gap:7px;margin-top:12px;font-size:12px;color:var(--text-3);min-width:0;}
+.idea-src span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.idea-src .ti-arrow-right{margin-left:auto;color:var(--accent-text);font-size:15px;}
+.big-idea{padding:1.15rem 1.25rem;}
+.big-idea-text{font-size:19px;font-weight:650;line-height:1.45;letter-spacing:-0.01em;}
+.bd-text{font-size:16px;line-height:1.7;}
+.bd-item-text{font-size:15.5px;line-height:1.65;}
+.bd-item{padding-top:5px;padding-bottom:5px;}
+.read-article{font-size:16.5px;line-height:1.8;}
+.story-what{font-size:15.5px;line-height:1.6;}
+.pod-rail.rail-hidden{display:none!important;}
+.pod-card-go{display:none;}
+.pod-add{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:1.1rem;padding:11px;border:1px dashed var(--border-strong);border-radius:var(--radius);background:none;color:var(--text-2);font:inherit;font-size:13px;font-weight:600;cursor:pointer;}
+.pod-add:hover{color:var(--text);border-color:var(--text-3);}
 @media(max-width:939px){
+  .pod-grid{grid-template-columns:1fr;gap:8px;}
+  .pod-card{flex-direction:row;align-items:center;text-align:left;gap:12px;padding:10px 12px;}
+  .pod-card-art{margin:0;flex-shrink:0;}
+  .pod-card-art>*{width:46px!important;height:46px!important;font-size:15px!important;border-radius:11px!important;}
+  .pod-card-txt{flex:1;min-width:0;}
+  .pod-card .tile-foot{justify-content:flex-start;margin-top:2px;}
+  .pod-card-go{display:block;color:var(--text-3);font-size:17px;}
+  .type-h{margin:1rem 0 0.5rem;}
   .shell{padding-bottom:calc(5.5rem + env(safe-area-inset-bottom));}
   .topbar{margin-bottom:1rem;}
   .logo{width:32px;height:32px;border-radius:9px;font-size:16px;}
@@ -550,9 +586,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
   .tile-grid{grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:12px;}
   .pod-grid{grid-template-columns:repeat(auto-fill,minmax(165px,1fr));}
   .pod-rail{flex-wrap:wrap;overflow:visible;}
-  .shelf{grid-auto-flow:row;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));grid-template-rows:auto;grid-auto-rows:0;grid-auto-columns:auto;row-gap:0;column-gap:12px;overflow:hidden;scroll-snap-type:none;padding:3px 3px 0;}
+  .shelf{grid-auto-flow:row;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));grid-template-rows:auto;grid-auto-rows:0;grid-auto-columns:auto;row-gap:0;column-gap:12px;overflow:hidden;scroll-snap-type:none;padding:3px 3px 0;}
   #weekly-focus-row{flex-wrap:wrap;overflow:visible;}
-  .summary-panel{max-width:800px;}
+  .summary-panel{max-width:740px;}
+  .idea-text{font-size:20px;max-width:46em;}
+  .pod-add{width:auto;padding:10px 18px;}
   .modal{max-width:480px;}
   .modal.modal-lg{max-width:600px;}
 }
@@ -606,8 +644,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
       <h2 id="home-greeting">Today</h2>
       <div class="home-stats" id="home-stats"></div>
     </div>
-    <button class="btn btn-sm" onclick="surpriseMe()"><i class="ti ti-dice-5"></i> Surprise me</button>
   </div>
+  <div id="home-idea"></div>
 
   <div class="ask-box">
     <div class="search-wrap" style="flex:1;margin:0">
@@ -1067,6 +1105,18 @@ if (PODCASTS.hibt && !episodes.some(e => (e.podcast || "doac") === "hibt")) {
 }
 let summaries = load("doac-sums-v3", {});
 let favs      = new Set(load("doac-favs-v3", []));
+let readSet   = new Set(load("doac-read-v1", []));   // breakdowns already opened on this device
+function isUnread(id){ return !!summaries[id] && !readSet.has(id); }
+function markRead(id){ if (!id || readSet.has(id)) return; readSet.add(id); save("doac-read-v1", [...readSet]); }
+// First run: don't flag the whole back-catalogue as unread — only the last week's breakdowns
+function initReadState(){
+  if (load("doac-read-init", false)) return;
+  const ready = episodes.filter(e => summaries[e.id]);
+  if (!ready.length) return;
+  const cutoff = Date.now() - 7 * 86400000;
+  ready.forEach(e => { if (!(e.ts > cutoff)) readSet.add(e.id); });
+  save("doac-read-v1", [...readSet]); save("doac-read-init", true);
+}
 let col       = load("doac-col-v3", []);
 let pbItems   = load("doac-pb-v1", []);
 let newsItems = load("doac-news-v1", []);
@@ -1597,6 +1647,7 @@ function saveBtnHtml(epId, secKey, idx){
 }
 
 function renderBreakdown(prefix, d, ep){
+  if (prefix === "panel") markRead(ep.id);
   document.getElementById(prefix + "-cta").style.display = "none";
   const r = document.getElementById(prefix + "-result");
   r.style.display = "block";
@@ -1604,10 +1655,8 @@ function renderBreakdown(prefix, d, ep){
   const sections = getTypeDef(ep).sections;
 
   // Tabs
-  let html = '<div class="breakdown-tabs">';
-  html += `<button class="bd-tab active" onclick="switchBdTab(this,'${prefix}-pane-quick')">Breakdown</button>`;
-  if (d.five_min_read) html += `<button class="bd-tab" onclick="switchBdTab(this,'${prefix}-pane-read')"><i class="ti ti-book" style="font-size:13px"></i> 5-min read</button>`;
-  html += '</div>';
+  let html = "";
+  if (d.five_min_read) html += `<div class="breakdown-tabs"><button class="bd-tab active" onclick="switchBdTab(this,'${prefix}-pane-quick')">Breakdown</button><button class="bd-tab" onclick="switchBdTab(this,'${prefix}-pane-read')"><i class="ti ti-book" style="font-size:13px"></i> 5-min read</button></div>`;
 
   // Quick breakdown pane
   html += `<div class="bd-pane visible" id="${prefix}-pane-quick"><div class="bd-sections">`;
@@ -1739,11 +1788,18 @@ function shelfHtml(title, icon, eps, seeAllArgs){
   </div>`;
 }
 
+// The one line that gives a reason to open a breakdown
+function hookLine(d){
+  if (!d) return "";
+  return d.one_big_idea || (d.top_stories && d.top_stories[0] && d.top_stories[0].headline) || d.executive_summary || d.core_concept || d.the_story || d.one_minute_recap || "";
+}
 function tileHtml(ep){
   const p = getPodcast(ep.podcast);
-  return `<div class="tile" onclick="openEpFromHome('${escAttr(ep.id)}')">
-    <div class="tile-pod">${thumbHtml(ep.podcast, "xs")}<span>${esc(p.name)}</span></div>
+  const hook = hookLine(summaries[ep.id]);
+  return `<div class="tile t-ep" style="--pc:${escAttr(p.gradient || "var(--accent)")}" onclick="openEpFromHome('${escAttr(ep.id)}')">
+    <div class="tile-pod">${thumbHtml(ep.podcast, "xs")}<span>${esc(p.name)}</span>${isUnread(ep.id) ? '<b class="unread-dot" title="Not opened yet"></b>' : ""}</div>
     <div class="tile-title">${esc(ep.title)}</div>
+    ${hook ? `<div class="tile-idea">${esc(hook)}</div>` : ""}
     <div class="tile-foot">
       ${ep.date ? `<span>${esc(ep.date)}</span>` : ""}
       ${favs.has(ep.id) ? '<i class="ti ti-heart-filled"></i>' : ""}
@@ -1947,17 +2003,43 @@ function renderHomeRows(){
   if (episodes.length) stats.push(`${podCt} podcast${podCt!==1?"s":""}`);
   const openCt = pbItems.filter(p => p.status === "todo" || p.status === "doing").length;
   if (openCt) stats.push(`${openCt} to act on`);
+  initReadState();
+  const unreadCt = ready.filter(e => !readSet.has(e.id)).length;
+  if (unreadCt) stats.unshift(`${unreadCt} unread`);
+  renderIdea(ready);
   document.getElementById("home-stats").textContent = stats.join(" · ") || "Nothing here yet";
 
-  // Shelves: favourites first, then one per podcast type (newest first)
-  const newest = ready.slice().sort(byNewest);
+  // Shelves: one per podcast type (unread first, then newest), favourites last
+  const newest = ready.slice().sort((a,b) => (readSet.has(a.id) - readSet.has(b.id)) || byNewest(a,b));
   const byType = {};
   newest.forEach(e => { const t = TYPE_META[getPodType(e.podcast || "doac")] ? getPodType(e.podcast || "doac") : "other"; (byType[t] = byType[t] || []).push(e); });
   document.getElementById("home-shelves").innerHTML =
-    shelfHtml("Favourites", "ti-heart", newest.filter(e => favs.has(e.id)), "'all','favs'")
-    + [...TYPE_ORDER, "other"].map(t => shelfHtml(TYPE_META[t].label, TYPE_META[t].icon, byType[t] || [], `'${t}'`)).join("");
+    [...TYPE_ORDER, "other"].map(t => shelfHtml(TYPE_META[t].label, TYPE_META[t].icon, byType[t] || [], `'${t}'`)).join("")
+    + shelfHtml("Favourites", "ti-heart", ready.filter(e => favs.has(e.id)).sort(byNewest), "'all','favs'");
 
   document.getElementById("home-empty").style.display = ready.length ? "none" : "block";
+}
+
+// ── Idea of the day: one big idea, same all day, unread breakdowns preferred
+let ideaShift = 0;
+function nextIdea(){ ideaShift++; renderHomeRows(); }
+function renderIdea(ready){
+  const el = document.getElementById("home-idea");
+  if (!el) return;
+  let pool = ready.filter(e => summaries[e.id].one_big_idea);
+  const fresh = pool.filter(e => !readSet.has(e.id));
+  if (fresh.length) pool = fresh;
+  if (!pool.length) { el.innerHTML = ""; return; }
+  pool.sort((a,b) => a.id < b.id ? -1 : 1);
+  const day = Math.floor((Date.now() - new Date().getTimezoneOffset() * 60000) / 86400000);
+  const ep = pool[(day + ideaShift) % pool.length];
+  const p = getPodcast(ep.podcast);
+  el.innerHTML = `<div class="idea-card" style="--pc:${escAttr(p.gradient || "var(--accent)")}" onclick="openEpFromHome('${escAttr(ep.id)}')">
+    <div class="idea-h"><i class="ti ti-bulb"></i> Idea of the day
+      ${pool.length > 1 ? `<button class="th-btn" onclick="event.stopPropagation();nextIdea()" title="Show another"><i class="ti ti-arrows-shuffle"></i></button>` : ""}</div>
+    <p class="idea-text">${esc(summaries[ep.id].one_big_idea)}</p>
+    <div class="idea-src">${thumbHtml(ep.podcast, "xs")}<span>${esc(ep.title)}</span><i class="ti ti-arrow-right"></i></div>
+  </div>`;
 }
 
 // Kept as an alias — several flows call loadRandom() to refresh the home view
@@ -2261,6 +2343,9 @@ function renderPodRail(){
   el.innerHTML = `<button class="pod-chip pc-all ${podFilter==='all'?'on':''}" onclick="setPodFilter('all')">All<span class="pc-ct">${episodes.length}</span></button>`
     + chips
     + `<button class="pod-chip pc-add" onclick="showAddPodcastModal()" title="Add a podcast"><i class="ti ti-plus"></i></button>`;
+  // On the plain Podcasts view the cards below are the same list — the chips would only repeat them
+  const q = (document.getElementById("search-input") || {}).value || "";
+  el.classList.toggle("rail-hidden", podFilter === "all" && pageFilter === "all" && !q.trim());
 }
 
 function byNewest(a, b){ return (b.ts||0) - (a.ts||0); }
@@ -2311,8 +2396,11 @@ function podCardHtml(k){
   const readyCt = all.filter(e => summaries[e.id]).length;
   return `<div class="tile pod-card" onclick="setPodFilter('${escAttr(k)}')">
     <div class="pod-card-art">${thumbHtml(k, "lg")}</div>
-    <div class="tile-title" style="-webkit-line-clamp:2">${esc(p.name)}</div>
-    <div class="tile-foot">${all.length ? `${all.length} eps · ${readyCt} ready` : "Tap to set up"}</div>
+    <div class="pod-card-txt">
+      <div class="tile-title" style="-webkit-line-clamp:2">${esc(p.name)}</div>
+      <div class="tile-foot">${all.length ? `${readyCt} of ${all.length} ready` : "Tap to set up"}</div>
+    </div>
+    <i class="ti ti-chevron-right pod-card-go"></i>
   </div>`;
 }
 
@@ -2374,7 +2462,7 @@ function renderEpGroups(){
   const keys = orderedPodKeys();
   const orphanKeys = [...new Set(episodes.map(e => e.podcast || "doac"))].filter(k => !PODCASTS[k]);
   if (!keys.length && !orphanKeys.length) {
-    el.innerHTML = '<div class="empty"><i class="ti ti-microphone"></i>No podcasts yet. Tap <b>+</b> in the row above to add one.</div>';
+    el.innerHTML = '<div class="empty"><i class="ti ti-microphone"></i>No podcasts yet.<br><button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="showAddPodcastModal()"><i class="ti ti-plus"></i> Add your first podcast</button></div>';
   } else {
     const groups = {};
     [...keys, ...orphanKeys].forEach(k => {
@@ -2384,7 +2472,8 @@ function renderEpGroups(){
     const gKeys = [...TYPE_ORDER, "other"].filter(t => groups[t]);
     el.innerHTML = lensRow + gKeys.map(t =>
       (gKeys.length > 1 ? `<div class="type-h"><i class="ti ${TYPE_META[t].icon}"></i>${TYPE_META[t].label} <span class="th-ct">${groups[t].length}</span></div>` : "")
-      + `<div class="tile-grid pod-grid">${groups[t].map(podCardHtml).join("")}</div>`).join("");
+      + `<div class="tile-grid pod-grid">${groups[t].map(podCardHtml).join("")}</div>`).join("")
+      + `<button class="pod-add" onclick="showAddPodcastModal()"><i class="ti ti-plus"></i> Add a podcast</button>`;
   }
   renderBulkBar();
 }
@@ -2750,7 +2839,7 @@ function renderSaved(){
   if (!items.length) {
     el.innerHTML = `<div class="empty"><i class="ti ti-bookmark"></i>${all.length
       ? "Nothing matches these filters."
-      : "Nothing saved yet.<br>Generate a breakdown and tap + on any insight — it lands here, organised by life area."}</div>`;
+      : `Nothing saved yet.<br>Open a breakdown and tap + on any insight. It lands here, organised by life area.<br><button class="btn btn-sm" style="margin-top:12px" onclick="showAllBreakdowns()"><i class="ti ti-arrow-right"></i> Browse breakdowns</button>`}</div>`;
     return;
   }
 
@@ -3017,7 +3106,7 @@ async function generateBriefing(force){
       fetchHeadlines("india", null, 15),
       ...topics.map(tp => fetchHeadlines("topic", tp, 8))
     ]);
-    if (!world.length && !india.length) throw new Error("no news source reachable — check the worker is updated & deployed");
+    if (!world.length && !india.length) throw new Error("the news sources didn't respond");
 
     const fmt = (hs) => hs.map(h => "- " + h.title + (h.src ? ` (${h.src})` : "")).join("\n");
     const topicBlock = topics.map((tp, i) =>
@@ -3089,7 +3178,7 @@ function renderBriefing(){
     return;
   }
   if (cached.error) {
-    el.innerHTML = `<div class="brief-wrap">${head}<div class="brief-loading">Couldn't build the briefing — ${esc(cached.error)}<br><button class="btn btn-sm" style="margin-top:8px" onclick="generateBriefing(true)">Try again</button></div></div>`;
+    el.innerHTML = `<div class="brief-wrap">${head}<div class="brief-loading">Today's briefing isn't available right now.<br><span style="font-size:12px;opacity:.8">It usually works on a second try. (${esc(cached.error)})</span><br><button class="btn btn-sm" style="margin-top:10px" onclick="generateBriefing(true)"><i class="ti ti-refresh"></i> Try again</button></div></div>`;
     return;
   }
   const d = cached.data || {};
@@ -3116,7 +3205,7 @@ function renderNewsDigest(){
   if (!items.length) {
     el.innerHTML = `<div class="empty"><i class="ti ti-news"></i>${newsItems.length
       ? "No stories match this filter."
-      : "No bookmarked stories yet.<br>Generate a breakdown for a news episode and tap the bookmark icon on any story."}</div>`;
+      : `No bookmarked stories yet.<br>Open a news breakdown and tap the bookmark on any story to keep it here.<br><button class="btn btn-sm" style="margin-top:12px" onclick="showAllBreakdowns('news')"><i class="ti ti-arrow-right"></i> See news breakdowns</button>`}</div>`;
     return;
   }
 
