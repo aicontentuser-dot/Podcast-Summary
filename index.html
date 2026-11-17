@@ -531,13 +531,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .idea-src{display:flex;align-items:center;gap:7px;margin-top:12px;font-size:12px;color:var(--text-3);min-width:0;}
 .idea-src span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .idea-src .ti-arrow-right{margin-left:auto;color:var(--accent-text);font-size:15px;}
-.big-idea{padding:1.15rem 1.25rem;}
-.big-idea-text{font-size:19px;font-weight:650;line-height:1.45;letter-spacing:-0.01em;}
-.bd-text{font-size:16px;line-height:1.7;}
-.bd-item-text{font-size:15.5px;line-height:1.65;}
-.bd-item{padding-top:5px;padding-bottom:5px;}
-.read-article{font-size:16.5px;line-height:1.8;}
-.story-what{font-size:15.5px;line-height:1.6;}
 .pod-rail.rail-hidden{display:none!important;}
 .pod-card-go{display:none;}
 .pod-add{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:1.1rem;padding:11px;border:1px dashed var(--border-strong);border-radius:var(--radius);background:none;color:var(--text-2);font:inherit;font-size:13px;font-weight:600;cursor:pointer;}
@@ -593,6 +586,97 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
   .pod-add{width:auto;padding:10px 18px;}
   .modal{max-width:480px;}
   .modal.modal-lg{max-width:600px;}
+}
+
+/* ════════════════════════════════════════════════════════
+   TYPE SCALE — one set of sizes for every screen (kept last so it wins)
+   label 11 · meta 12.5 · secondary 14 · body 15.5 · heading 15–16 · lead 18 · title 21
+   ════════════════════════════════════════════════════════ */
+:root{--fs-label:11px;--fs-meta:12.5px;--fs-2nd:14px;--fs-body:15.5px;--lh-body:1.65;--fs-lead:18px;--fs-title:21px;}
+
+/* Reader header */
+.panel-title{font-size:var(--fs-title);font-weight:750;line-height:1.28;letter-spacing:-0.015em;margin-bottom:4px;}
+.reader-actions{margin:0.2rem 0 1.1rem;}
+
+/* Breakdown sections */
+.bd-sections{gap:12px;}
+.bd-sec{padding:16px 18px;}
+.bd-head{gap:10px;margin-bottom:12px;}
+.bd-head h3{font-size:15px;font-weight:700;letter-spacing:-0.005em;}
+.bd-text,.bd-item-text{font-size:var(--fs-body);line-height:var(--lh-body);}
+.bd-list{gap:12px;}
+.bd-item{gap:10px;}
+.bd-num{font-size:12.5px;line-height:calc(var(--fs-body) * 1.65);padding-top:0;min-width:20px;}
+.bd-row{gap:12px;}
+.bd-row>.save-btn,.bd-item>.save-btn{margin-top:1px;}
+.big-idea{padding:16px 18px;margin-bottom:0;}
+.big-idea-label{font-size:var(--fs-label);margin-bottom:8px;}
+.big-idea-text{font-size:var(--fs-lead);font-weight:650;line-height:1.45;letter-spacing:-0.01em;}
+.quote-block{font-size:16px;line-height:1.6;padding:12px 16px;}
+.bd-note{font-size:13px;line-height:1.5;margin:0 0 12px;padding:8px 12px;}
+.bd-basis{font-size:var(--fs-meta);margin-top:14px;}
+.breakdown-tabs{margin-bottom:1rem;}
+.bd-tab{font-size:13.5px;padding:8px 6px;}
+
+/* News stories: headline > what happened > analysis */
+.story-card{padding:16px 18px;margin-bottom:10px;}
+.story-card:last-child{margin-bottom:0;}
+.story-headline{font-size:16.5px;font-weight:700;line-height:1.35;letter-spacing:-0.01em;margin-bottom:8px;}
+.story-what{font-size:var(--fs-body);line-height:var(--lh-body);color:var(--text);margin-bottom:0;}
+.story-why,.story-watch{font-size:var(--fs-2nd);line-height:1.6;color:var(--text-2);}
+.story-why{margin:0;}
+.story-headline + .story-why{margin-top:2px;}
+.story-what + .story-why{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.story-watch{margin-top:8px;}
+.story-what + .story-watch{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.story-why b,.story-watch b{display:block;font-size:var(--fs-label);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;}
+.story-why b{color:var(--accent-text);}
+.story-watch b{color:var(--text-3);}
+
+/* 5-min read */
+.read-article{font-size:16px;line-height:1.75;}
+.read-article p{margin-bottom:1rem;}
+.read-article h4{font-size:var(--fs-label);margin:1.5rem 0 0.5rem;}
+.read-article .pullquote{font-size:17px;line-height:1.55;margin:0;}
+.read-article .bd-row{margin:1.3rem 0;align-items:center;}
+.note-wrap{margin-top:1.6rem;}
+
+/* Home */
+.home-head h2{font-size:22px;}
+.shelf-h h2{font-size:15px;}
+.tile-pod{font-size:11.5px;}
+.tile-title,.tile.t-ep .tile-title{font-size:14px;line-height:1.38;}
+.tile-idea{font-size:13px;line-height:1.5;}
+.tile-foot{font-size:11.5px;}
+.act-text{font-size:var(--fs-2nd);line-height:1.45;}
+.act-meta{font-size:11.5px;}
+.revisit-text{font-size:var(--fs-body);line-height:1.6;}
+.revisit-src{font-size:var(--fs-meta);}
+.ask-answer-text{font-size:var(--fs-body);line-height:var(--lh-body);}
+
+/* Lists, saved, news digest, briefing */
+.ep-title-sm{font-size:14.5px;line-height:1.35;}
+.col-text{font-size:15px;line-height:1.6;}
+.col-src{font-size:var(--fs-meta);}
+.nd-headline{font-size:16px;font-weight:700;line-height:1.35;margin-bottom:6px;}
+.nd-why{font-size:var(--fs-2nd);line-height:1.6;margin-bottom:6px;}
+.nd-watch{font-size:13px;}
+.brief-head h2{font-size:18px;}
+.brief-title{font-size:15.5px;line-height:1.38;}
+.brief-what{font-size:var(--fs-2nd);line-height:1.6;margin-top:6px;}
+.brief-context,.brief-why{font-size:var(--fs-2nd);line-height:1.6;}
+.brief-label{font-size:10.5px;}
+.pod-hero-info h2{font-size:19px;}
+.bd-row>.bd-text,.bd-row>.big-idea-text,.bd-row>.quote-block,.bd-item-text{flex:1;min-width:0;}
+.li-name{display:block;font-weight:700;margin-bottom:1px;}
+.bd-note{background:var(--surface);border:1px solid var(--border);color:var(--text-2);}
+
+@media(max-width:939px){
+  :root{--fs-title:19px;--fs-lead:17.5px;}
+  .bd-sec{padding:14px 14px;}
+  .story-card{background:none;border:none;border-radius:0;padding:16px 0 0;margin:16px 0 0;border-top:1px solid var(--border-strong);}
+  .bd-head + .story-card{border-top:none;margin-top:0;padding-top:0;}
+  .big-idea{padding:14px 15px;}
 }
 </style>
 </head>
@@ -1680,7 +1764,7 @@ function renderBreakdown(prefix, d, ep){
       html += '<ul class="bd-list">';
       v.forEach((item, i) => {
         let body = esc(item);
-        if (sec.key === "the_list") { const m = String(item).match(/^(.{1,80}?):\s+([\s\S]+)$/); if (m) body = `<b>${esc(m[1])}</b> ${esc(m[2])}`; }
+        if (sec.key === "the_list") { const m = String(item).match(/^(.{1,80}?):\s+([\s\S]+)$/); if (m) body = `<b class="li-name">${esc(m[1])}</b>${esc(m[2])}`; }
         html += `<li class="bd-item"><span class="bd-num">${i+1}.</span><span class="bd-item-text">${body}</span>${saveBtnHtml(ep.id, sec.key, i)}</li>`;
       });
       html += '</ul>';
@@ -1698,8 +1782,8 @@ function renderBreakdown(prefix, d, ep){
         html += `<div class="story-card"><div class="bd-row"><div style="flex:1">
           <div class="story-headline">${esc(story.headline || "")}</div>
           ${story.what_happened ? `<div class="story-what">${esc(story.what_happened)}</div>` : ""}
-          ${story.why_matters ? `<div class="story-why"><b>Why it matters:</b> ${esc(story.why_matters)}</div>` : ""}
-          ${story.what_watch ? `<div class="story-watch"><b>Watch:</b> ${esc(story.what_watch)}</div>` : ""}
+          ${story.why_matters ? `<div class="story-why"><b>Why it matters</b>${esc(story.why_matters)}</div>` : ""}
+          ${story.what_watch ? `<div class="story-watch"><b>What to watch</b>${esc(story.what_watch)}</div>` : ""}
         </div>
         <button class="save-btn ${bookmarked?'on':''}" onclick="toggleNewsBookmark('${escAttr(ep.id)}',${i})" title="${bookmarked?'Remove bookmark':'Bookmark to News Digest'}"><i class="ti ${bookmarked?'ti-bookmark-filled':'ti-bookmark'}"></i></button>
         </div></div>`;
