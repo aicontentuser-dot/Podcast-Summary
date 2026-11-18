@@ -294,6 +294,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .story-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;}
 .story-headline{font-size:14px;font-weight:600;margin-bottom:5px;}
 .bd-note{font-size:12.5px;color:var(--text-2);margin:-2px 0 8px;padding:6px 10px;border-radius:8px;background:var(--surface-2,rgba(128,128,128,.12));}
+.link-btn{background:none;border:none;padding:0;font:inherit;color:var(--accent-text);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
+.modal-sub{font-size:13.5px;line-height:1.55;color:var(--text-2);margin:-4px 0 14px;}
+#transcript-text{min-height:180px;font-size:13px;}
+.reader-foot{display:flex;flex-wrap:wrap;gap:8px;}
+.reader-foot .btn-danger{margin-left:auto;}
 .bd-basis{font-size:12px;color:var(--text-2);margin-top:12px;opacity:.85;}
 .bd-item-text b{font-weight:600;}
 .story-what{font-size:14px;line-height:1.55;color:var(--text);margin-bottom:8px;}
@@ -799,6 +804,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
       <span class="note-saved" id="note-saved">Saved</span>
     </div>
     <div class="reader-foot" id="panel-action-row">
+      <button class="btn btn-sm" id="panel-regen-btn" onclick="regenerate()"><i class="ti ti-refresh"></i> Regenerate</button>
+      <button class="btn btn-sm" onclick="openTranscriptModal()"><i class="ti ti-file-text"></i> Use a transcript</button>
       <button class="btn btn-sm btn-danger" onclick="deleteEp()"><i class="ti ti-trash"></i> Delete episode</button>
     </div>
   </div>
@@ -934,10 +941,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
     <div class="field">
       <label>Show notes <span>(optional — improves accuracy)</span></label>
       <textarea id="new-desc" placeholder="Paste the episode description here…"></textarea>
+      <span class="field-hint">For the fullest breakdown, open the episode after adding it and choose <b>Use a transcript</b>.</span>
     </div>
     <div class="action-row" style="margin-top:4px">
       <button class="btn btn-primary" onclick="addEp()"><i class="ti ti-plus"></i> Add episode</button>
       <button class="btn" onclick="hideAddEpModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="transcript-modal" onclick="if(event.target===this)closeTranscriptModal()">
+  <div class="modal">
+    <h2>Use a transcript</h2>
+    <p class="modal-sub">A breakdown built from what was actually said catches far more than one built from show notes. On YouTube, open the episode, tap <b>…more</b> under the video, then <b>Show transcript</b>, and copy it all. Timestamps are fine.</p>
+    <div class="field">
+      <textarea id="transcript-text" rows="9" placeholder="Paste the full transcript here…"></textarea>
+    </div>
+    <div class="action-row" style="margin-top:4px">
+      <button class="btn btn-primary" onclick="useTranscript()"><i class="ti ti-sparkles"></i> Rebuild breakdown</button>
+      <button class="btn" onclick="closeTranscriptModal()">Cancel</button>
     </div>
   </div>
 </div>
@@ -988,20 +1010,13 @@ function renderAiProviderUI(){
 /* ════════════════════════════════════════════════════════
    2. PODCAST TYPES — sections, prompts, token budgets
    ════════════════════════════════════════════════════════ */
-// Appended to every non-news prompt: honest about the source, and handles "N habits"-style titles
-const SOURCE_RULES = `
-
-SOURCE LIMITS: You have only the title, guest and show notes above. You did NOT hear the audio or read a transcript, so treat the show notes as the ground truth. Never invent quotes: best_quotes may contain only sentences that appear word-for-word in the show notes; if there are none, return []. Do not pad. If the source does not support a point, leave it out. Fewer accurate items beat filler. The five_min_read may be shorter than 400 words if that is all the source supports, and must not add invented detail.`;
-const LIST_RULE = `
-
-NUMBERED SETS: If the title or show notes promise a numbered set (for example "5 habits", "7 rules", "3 mistakes"), set list_title (for example "The 5 habits") and fill the_list with every item the source reveals, each written as "Name: one-sentence explanation". Include all N when the source gives them. If it gives only some, include only those; never invent the rest. key_ideas, action_steps and the recap must be consistent with the_list. If there is no numbered set, omit list_title and the_list.`;
 const LIST_SEC = { key:"the_list", title:"The list", icon:"ti-list-numbers", type:"list", cls:"sec-ideas", icls:"ic-ideas" };
 
 const PODCAST_TYPES = {
   interview: {
     label: "Interview / personal dev",
     icon: "ti-microphone-2",
-    maxTokens: 3000,
+    maxTokens: 5000,
     sections: [
       { key:"executive_summary", title:"Summary",      icon:"ti-file-text", type:"text",   cls:"sec-summary", icls:"ic-summary" },
       LIST_SEC,
@@ -1010,52 +1025,52 @@ const PODCAST_TYPES = {
       { key:"best_quotes",       title:"Best quotes",  icon:"ti-quote",     type:"quotes", cls:"sec-quotes",  icls:"ic-quotes"  },
       { key:"one_minute_recap",  title:"Recap",        icon:"ti-clock",     type:"text",   cls:"sec-recap",   icls:"ic-recap"   }
     ],
-    prompt: (ep, podName, desc, note) =>
-`Analyse this ${podName} podcast episode: "${ep.title}"${ep.guest ? " featuring "+ep.guest : ""}.${desc}${note}
+    prompt: kind =>
+`You are an expert editor turning an interview podcast into notes that replace listening to it, for a reader who wants to learn from it and apply it.
 
-key_ideas: every distinct idea the source supports (usually 4-8), each a specific claim, not a theme. action_steps: one concrete step for each idea that has one. best_quotes: see source limits.
-For one_big_idea: the single most valuable takeaway as ONE memorable sentence — if the listener remembers nothing else, this is it.
-For five_min_read: 400-500 word narrative article with subheadings (## prefix), flowing paragraphs, one pullquote (> prefix). Insightful, not a list.
-
-Return ONLY valid JSON:
-{"tags":["tag1","tag2"],"one_big_idea":"One memorable sentence","executive_summary":"2-3 sentence overview","list_title":"The 5 habits (only if a numbered set is promised)","the_list":["Name: one-sentence explanation"],"key_ideas":["idea"],"action_steps":["step"],"best_quotes":["quote"],"one_minute_recap":"punchy recap","five_min_read":"## Heading\\n\\nText.\\n\\n> Pullquote.\\n\\n## Heading\\n\\nText."}`
+FIELDS
+- tags: 3-5 lowercase topic words.
+- one_big_idea: the single most valuable takeaway, as one memorable sentence.
+- executive_summary: ${kind === "title" ? "2-3" : "3-5"} sentences: who the guest is and why they are worth hearing, the central argument, and the most important conclusions.
+- key_ideas: every distinct idea worth keeping${kind === "transcript" ? " (usually 8-12)" : ""}. Each is 1-3 sentences: the claim, then why or how, with the specifics (numbers, examples, names) that make it concrete.
+- action_steps: concrete things to do, each starting with a verb and including how much, how often or when. One for each idea that has a practical consequence; do not invent advice the episode does not give.
+- best_quotes: follow the source rules.
+- one_minute_recap: 4-6 sentences that connect the ideas into one argument, not a list.
+- five_min_read: ${kind === "transcript" ? "500-700" : kind === "notes" ? "up to 450" : "up to 200"} words: an article with ## subheadings, flowing paragraphs and one > pullquote, following the episode's actual arc and keeping its specifics.`,
+    schema: `{"tags":["topic one","topic two"],"one_big_idea":"One memorable sentence","executive_summary":"Overview","list_title":"The 5 habits","the_list":["Name: what it is and how to do it"],"key_ideas":["Specific claim, then why or how"],"action_steps":["Verb-first concrete step"],"best_quotes":["Exact line"],"one_minute_recap":"Connected recap","five_min_read":"## Heading\\n\\nText.\\n\\n> Pullquote.\\n\\n## Heading\\n\\nText."}`
   },
 
   news: {
     label: "News / current affairs",
     icon: "ti-news",
-    maxTokens: 2800,
+    maxTokens: 3500,
     sections: [
       { key:"top_stories",     title:"Top stories",   icon:"ti-news",        type:"stories", cls:"sec-summary", icls:"ic-summary" },
       { key:"quick_context",    title:"Quick context", icon:"ti-info-circle", type:"list",    cls:"sec-ideas",   icls:"ic-ideas"   },
       { key:"what_to_watch",    title:"What to watch", icon:"ti-eye",         type:"list",    cls:"sec-steps",   icls:"ic-steps"   },
       { key:"one_minute_recap", title:"Recap",         icon:"ti-clock",       type:"text",    cls:"sec-recap",   icls:"ic-recap"   }
     ],
-    prompt: (ep, podName, desc, note) =>
-`You are an experienced news editor at a publication like The Economist or the FT, briefing a smart reader who did not hear this episode of ${podName}: "${ep.title}".${desc}${note}
+    prompt: kind =>
+`You are an experienced news editor at a publication like The Economist or the FT, briefing a smart reader who did not hear this episode.
 
-STORY DISCOVERY (do this before writing anything): a single conversation usually hides several independent newsworthy stories — main topics, but also announcements, milestones, personnel moves, disputes, and meta-stories about the outlet or industry itself. Identify every possible story, rank them by newsworthiness, then write up the strongest 3-5 as SEPARATE stories. Never fold a genuine story into another story's context.
+STORY DISCOVERY (do this before writing anything): a single episode usually holds several independent newsworthy stories: main topics, but also announcements, milestones, personnel moves, disputes, and meta-stories about the outlet or industry itself. Identify every story, rank them by newsworthiness, then write up the strongest ${kind === "transcript" ? "3-6" : "3-5"} as SEPARATE stories. Never fold a genuine story into another story's context.
 
 For each story:
-- headline: punchy newspaper style that states the news itself and captures its tension — never a flat descriptive label. ("X Argues Critics Have a Point — and It's Costing Them" not "Criticism Debate in Media")
-- what_happened: THE NEWS, stated plainly and FIRST. 2-4 sentences covering who did or said what, what actually happened, and the key facts, numbers, places and dates as given in the episode. Facts only: no opinion, no implications, no "why it matters" here. A reader who stops after this field must already know what the story is.
-- why_matters: infer, don't narrate. Who is affected, what changes, why an informed reader will care six months from now. Second-order implications beat restating what the hosts said.
-- what_watch: the concrete next development to look for — an event, decision, number, or date, not a vague theme.
+- headline: punchy newspaper style that states the news itself and captures its tension, never a flat label. ("Regulator Retreats on Agent Commission Cuts After 2 Lakh Objections" not "Insurance Commission Debate")
+- what_happened: THE NEWS, stated plainly and first. 2-4 sentences: who did or said what, what actually happened, and the key facts, numbers, places and dates from the source. Facts only: no opinion and no implications here. A reader who stops after this field must already know the story.
+- why_matters: the analysis. Who is affected, what changes, and why an informed reader will care six months from now. Second-order implications, not a restatement of what_happened.
+- what_watch: the concrete next development to look for: an event, decision, number or date, not a vague theme.
 
-quick_context: background bullets a smart reader needs to fully get these stories (players, prior events, stakes).
-what_to_watch: the broader trends or follow-ups across the episode.
-one_minute_recap: a synthesis connecting the stories — the "so what" of the whole episode, not a list.
-
-Prefer analysis over narration throughout. Do not merely restate what the speakers said.
-
-Return ONLY valid JSON:
-{"tags":["tag1","tag2"],"top_stories":[{"headline":"Story headline","what_happened":"What actually happened, plainly","why_matters":"Why this matters","what_watch":"What to watch next"}],"quick_context":["background context point"],"what_to_watch":["broader trend or follow-up to watch"],"one_minute_recap":"punchy recap of the whole episode"}`
+quick_context: background bullets a smart reader needs (players, prior events, stakes). Keep general background clearly separate from what the episode reported.
+what_to_watch: the broader trends or follow-ups across the whole episode.
+one_minute_recap: a synthesis connecting the stories, the "so what" of the episode, not a list.`,
+    schema: `{"tags":["topic one","topic two"],"top_stories":[{"headline":"Story headline","what_happened":"What actually happened, plainly","why_matters":"Why this matters","what_watch":"What to watch next"}],"quick_context":["Background point"],"what_to_watch":["Broader follow-up"],"one_minute_recap":"Connected recap"}`
   },
 
   education: {
     label: "Education / science",
     icon: "ti-flask",
-    maxTokens: 3000,
+    maxTokens: 5000,
     sections: [
       { key:"core_concept",       title:"Core concept",       icon:"ti-bulb",      type:"text",   cls:"sec-summary", icls:"ic-summary" },
       LIST_SEC,
@@ -1065,20 +1080,26 @@ Return ONLY valid JSON:
       { key:"best_quotes",        title:"Best quotes",        icon:"ti-quote",     type:"quotes", cls:"sec-quotes",  icls:"ic-quotes"  },
       { key:"one_minute_recap",   title:"Recap",              icon:"ti-clock",     type:"text",   cls:"sec-recap",   icls:"ic-recap"   }
     ],
-    prompt: (ep, podName, desc, note) =>
-`Analyse this ${podName} education/science podcast episode: "${ep.title}"${ep.guest ? " with "+ep.guest : ""}.${desc}${note}
+    prompt: kind =>
+`You are an expert science editor turning an education or science podcast into notes that replace listening to it, for a reader who wants to understand the topic and act on it.
 
-Extract the core concept clearly, the science/evidence behind it, a practical protocol someone can follow, common myths it debunks, and best quotes.
-For one_big_idea: the single most valuable takeaway as ONE memorable sentence — if the listener remembers nothing else, this is it.
-
-Return ONLY valid JSON:
-{"tags":["tag1","tag2"],"one_big_idea":"One memorable sentence","list_title":"The 5 habits (only if a numbered set is promised)","the_list":["Name: one-sentence explanation"],"core_concept":"Clear 2-3 sentence explanation of the main concept","science_behind":["key scientific finding or mechanism"],"practical_protocol":["specific actionable protocol step"],"myths_debunked":["Myth: X. Reality: Y."],"best_quotes":["quote"],"one_minute_recap":"punchy recap","five_min_read":"## Heading\\n\\nText.\\n\\n> Pullquote.\\n\\n## Heading\\n\\nText."}`
+FIELDS
+- tags: 3-5 lowercase topic words.
+- one_big_idea: the single most valuable takeaway, as one memorable sentence.
+- core_concept: ${kind === "title" ? "2-3" : "3-5"} sentences explaining the main concept plainly, as you would to a smart friend.
+- science_behind: each finding or mechanism as a separate item${kind === "transcript" ? " (usually 5-10)" : ""}: what it is, how it works, and the study, number or evidence cited for it (only if the source cites one).
+- practical_protocol: step-by-step actions with the doses, durations, timings and conditions given in the source. Include any warnings or "avoid this" advice.
+- myths_debunked: "Myth: X. Reality: Y. Why: Z." Only misconceptions the episode actually addresses; [] if none.
+- best_quotes: follow the source rules.
+- one_minute_recap: 4-6 sentences that connect the ideas, not a list.
+- five_min_read: ${kind === "transcript" ? "500-700" : kind === "notes" ? "up to 450" : "up to 200"} words: an article with ## subheadings, flowing paragraphs and one > pullquote, following the episode's arc and keeping its specifics.`,
+    schema: `{"tags":["topic one","topic two"],"one_big_idea":"One memorable sentence","list_title":"The 5 habits","the_list":["Name: what it is and how to do it"],"core_concept":"Plain explanation","science_behind":["Finding: how it works, and the evidence cited"],"practical_protocol":["Verb-first step with dose, time or duration"],"myths_debunked":["Myth: X. Reality: Y. Why: Z."],"best_quotes":["Exact line"],"one_minute_recap":"Connected recap","five_min_read":"## Heading\\n\\nText.\\n\\n> Pullquote.\\n\\n## Heading\\n\\nText."}`
   },
 
   business: {
     label: "Business / startup stories",
     icon: "ti-building-store",
-    maxTokens: 3000,
+    maxTokens: 5000,
     sections: [
       { key:"the_story",        title:"The story",       icon:"ti-book-2",     type:"text",   cls:"sec-summary", icls:"ic-summary" },
       LIST_SEC,
@@ -1087,15 +1108,19 @@ Return ONLY valid JSON:
       { key:"best_quotes",      title:"Best quotes",     icon:"ti-quote",      type:"quotes", cls:"sec-quotes",  icls:"ic-quotes"  },
       { key:"one_minute_recap", title:"Recap",           icon:"ti-clock",      type:"text",   cls:"sec-recap",   icls:"ic-recap"   }
     ],
-    prompt: (ep, podName, desc, note) =>
-`Analyse this ${podName} business/startup podcast episode: "${ep.title}"${ep.guest ? " featuring "+ep.guest : ""}.${desc}${note}
+    prompt: kind =>
+`You are an expert business editor turning a company or founder story into notes that replace listening to it, for a reader who wants lessons they can use.
 
-Extract the business story, pivotal decisions made, lessons any entrepreneur can apply, and best quotes.
-For one_big_idea: the single most valuable takeaway as ONE memorable sentence — if the listener remembers nothing else, this is it.
-For five_min_read: engaging 400-500 word narrative with subheadings (## prefix) and one pullquote (> prefix).
-
-Return ONLY valid JSON:
-{"tags":["tag1","tag2"],"one_big_idea":"One memorable sentence","list_title":"The 5 habits (only if a numbered set is promised)","the_list":["Name: one-sentence explanation"],"the_story":"2-3 sentence narrative of what this episode covers","key_decisions":["decision with outcome"],"lessons_learned":["concrete lesson"],"best_quotes":["quote"],"one_minute_recap":"punchy recap","five_min_read":"## Heading\\n\\nText.\\n\\n> Pullquote.\\n\\n## Heading\\n\\nText."}`
+FIELDS
+- tags: 3-5 lowercase topic words.
+- one_big_idea: the single most valuable takeaway, as one memorable sentence.
+- the_story: ${kind === "title" ? "2-3" : "4-6"} sentences: the company or person, where they started, the turning points and where they ended up, with the real numbers the source mentions.
+- key_decisions: each pivotal decision as one item: the situation, the choice made, and what happened as a result.
+- lessons_learned: lessons another founder or professional could apply, each tied to the moment in the story it comes from.
+- best_quotes: follow the source rules.
+- one_minute_recap: 4-6 sentences that connect the story and its lessons, not a list.
+- five_min_read: ${kind === "transcript" ? "500-700" : kind === "notes" ? "up to 450" : "up to 200"} words: a narrative article with ## subheadings and one > pullquote, keeping the story's specifics.`,
+    schema: `{"tags":["topic one","topic two"],"one_big_idea":"One memorable sentence","list_title":"The 5 habits","the_list":["Name: what it is and how to do it"],"the_story":"Narrative with real numbers","key_decisions":["Situation, choice, result"],"lessons_learned":["Lesson tied to its moment"],"best_quotes":["Exact line"],"one_minute_recap":"Connected recap","five_min_read":"## Heading\\n\\nText.\\n\\n> Pullquote.\\n\\n## Heading\\n\\nText."}`
   }
 };
 
@@ -1385,7 +1410,7 @@ async function aiRequest(prompt, maxTokens, ptype, engineKey){
 async function aiRequestRaw(prompt, maxTokens, ptype, engineKey){
   if (!workerUrl) throw new Error("Worker URL not set — paste it in the setup banner above.");
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 120000);   // 2 min cap so a stalled request can't hang the queue
+  const timer = setTimeout(() => ctrl.abort(), 240000);   // 4 min cap (transcripts take longer) so a stalled request can't hang the queue
   let res;
   try {
     res = await fetch(workerUrl + "/ai", {
@@ -1396,12 +1421,13 @@ async function aiRequestRaw(prompt, maxTokens, ptype, engineKey){
         gemini_model: (AI_ENGINES[engineKey || aiProvider] || {}).model,
         ptype: ptype || "general",
         model: AI_MODEL, max_tokens: maxTokens,
+        temperature: ptype === "ask" ? 0.5 : 0.3,   // low: extraction should be faithful, not creative
         messages: [{ role:"user", content:prompt }]
       }),
       signal: ctrl.signal
     });
   } catch(e) {
-    throw new Error(e.name === "AbortError" ? "Request timed out after 2 minutes — try again." : e.message);
+    throw new Error(e.name === "AbortError" ? "Request timed out after 4 minutes — try again." : e.message);
   } finally {
     clearTimeout(timer);
   }
@@ -1418,14 +1444,15 @@ async function aiRequestRaw(prompt, maxTokens, ptype, engineKey){
 
 // Catalogued episodes store no show notes; pull them from the feed at generate time
 async function enrichFromFeed(ep){
-  // Skip when notes exist — unless they look cut at the old 500-char limit, then refetch the full text
-  const oldCut = ep.desc && ep.desc.length >= 480 && ep.desc.length <= 500;
-  if ((ep.desc && !oldCut) || !ep.podcast) return;
+  // Refetch once per episode with the current parser (fuller notes with line breaks + transcript link)
+  if (!ep.podcast || ep.notesV === 2) return;
   try {
     const feed = await getFullFeed(ep.podcast);
     const hit = feed.find(fe => normTitle(fe.title) === normTitle(ep.title));
     if (hit) {
-      if (hit.desc && hit.desc.length >= (ep.desc||"").length) ep.desc = hit.desc;
+      if (hit.desc && (hit.desc.length >= (ep.desc||"").length * 0.8 || !/\n/.test(ep.desc||""))) ep.desc = hit.desc;
+      if (hit.transcriptUrl) { ep.transcriptUrl = hit.transcriptUrl; ep.transcriptType = hit.transcriptType; }
+      ep.notesV = 2;
       if (!ep.link) ep.link = hit.link || "";
       if (!ep.guest) ep.guest = hit.guest || "";
       if (!ep.date) { ep.date = hit.date || ""; ep.ts = hit.ts || ep.ts || 0; }
@@ -1434,18 +1461,78 @@ async function enrichFromFeed(ep){
   } catch(e) { /* generate without notes if the feed is unreachable */ }
 }
 
-async function callAI(ep){
+const TRANSCRIPT_MAX = 180000;   // characters (~45k tokens) — a 3-hour conversation fits
+
+// Builds the source block every prompt starts with, using the best material available:
+// a transcript (pasted or from the feed) beats show notes, which beat the title alone.
+async function buildSource(ep, pastedTranscript){
+  const notes = cleanNotes(ep.desc || "");
+  let transcript = (pastedTranscript || "").trim();
+  if (!transcript) transcript = await fetchTranscript(ep);
+  const kind = transcript.length > 1500 ? "transcript" : notes ? "notes" : "title";
+  const head = `PODCAST: ${getPodcast(ep.podcast).name}
+EPISODE: "${ep.title}"${ep.guest ? `\nGUEST: ${ep.guest}` : ""}${ep.date ? `\nPUBLISHED: ${ep.date}` : ""}`;
+  let body = "";
+  if (kind === "transcript") {
+    const cut = transcript.length > TRANSCRIPT_MAX;
+    body = `SOURCE: the full transcript of the episode${notes ? ", plus its show notes" : ""}.${cut ? " (The transcript is very long and was cut at the end.)" : ""}
+${notes ? `\n<<<SHOW NOTES\n${notes.slice(0, 4000)}\nSHOW NOTES>>>\n` : ""}
+<<<TRANSCRIPT
+${transcript.slice(0, TRANSCRIPT_MAX)}
+TRANSCRIPT>>>`;
+  } else if (kind === "notes") {
+    body = `SOURCE: the episode's show notes only. You did NOT hear the audio or read a transcript.${hasChapters(notes) ? " The notes include timestamped chapters: treat them as the outline of the conversation." : ""}
+
+<<<SHOW NOTES
+${notes.slice(0, 6000)}
+SHOW NOTES>>>`;
+  } else {
+    body = "SOURCE: the title only. There are no show notes and no transcript.";
+  }
+  return { kind, text: head + "\n\n" + body };
+}
+
+// Rules that depend on what the model actually has in front of it
+function sourceRules(kind, isNews){
+  if (kind === "transcript") return isNews
+    ? "SOURCE RULES: Work from the transcript. Every substantive segment of the episode should appear either as a story or in quick_context. Facts, numbers and names must come from the transcript."
+    : "SOURCE RULES: Work from the transcript; it is the ground truth. A long conversation usually holds 8-12 ideas worth keeping, so extract comprehensively and in the order they come up. best_quotes: 3-5 short, memorable lines copied word for word from the transcript (tidy only filler words like \"um\"); never paraphrase or compose a quote.";
+  if (kind === "notes") return isNews
+    ? "SOURCE RULES: You only have the show notes, so write up only the stories they describe; fewer than three is fine. Never invent facts, numbers or quotes the notes do not contain."
+    : "SOURCE RULES: You only have the show notes, so they are your ground truth. Cover everything the notes mention, and nothing they don't. Where the notes name a topic without saying what was said about it, you may say the episode covers it, but do not make up its content. best_quotes: only sentences that appear word for word in the notes; otherwise return []. Length follows the source: thin notes mean a shorter breakdown, with no padding.";
+  return "SOURCE RULES: You only have the title. Keep the breakdown short. Use what you know about this specific episode only if you confidently recognise it; otherwise stick to what the title itself supports. Never invent specifics, numbers or quotes. best_quotes: [].";
+}
+
+// The working method shared by every non-news type
+const METHOD = `HOW TO WORK
+1. Map the episode first (do not output this): every distinct topic, claim, story, number, recommendation and disagreement in the source, in the order they come up.
+2. Coverage: every substantial topic in your map, and every chapter if there is a chapter list, must appear somewhere in the output. Only ads, intros and small talk may be left out.
+3. Make each item stand alone: the specific claim, then why or how it works, plus the number, example or name that makes it concrete. A bare topic ("sleep matters") fails; a claim with its reason and a concrete number or example from the source passes.
+4. No filler: nothing that would fit any episode, no motivational padding, and no point repeated across sections.
+5. Attribute: when something is the guest's opinion rather than established fact, or the host and guest disagree, say so.
+6. Before returning, check: nothing important from your map is missing, no generic items, no duplicates, every action is concrete.`;
+
+const LIST_RULE = `NUMBERED SETS: If the title or source promises a numbered set (for example "5 habits", "7 rules", "3 mistakes"), set list_title (for example "The 5 habits") and fill the_list with every item the source reveals, each written as "Name: one or two sentences on what it is and how to do it". Include all of them when the source gives them; if it gives only some, include only those and never invent the rest. The other sections must agree with the_list. If there is no numbered set, omit list_title and the_list.`;
+
+async function callAI(ep, pastedTranscript){
   await enrichFromFeed(ep);
   const type = getTypeDef(ep);
-  const desc = ep.desc ? "\nShow notes: " + ep.desc.slice(0,3500) : "";
-  const note = !ep.desc ? "\nNo show notes are available. Work only from the title and guest. If you confidently recognise this specific episode, you may use what you know; otherwise keep the output short and general and do not invent specifics." : "";
-  const prompt = type.prompt(ep, getPodcast(ep.podcast).name, desc, note) + (type === PODCAST_TYPES.news ? "" : SOURCE_RULES + LIST_RULE);
+  const isNews = type === PODCAST_TYPES.news;
+  const src = await buildSource(ep, pastedTranscript);
+  const prompt = [
+    src.text,
+    sourceRules(src.kind, isNews),
+    type.prompt(src.kind),
+    isNews ? "" : METHOD + "\n\n" + LIST_RULE,
+    "Return ONLY valid JSON in exactly this shape (example values show the format, not the length):\n" + type.schema
+  ].filter(Boolean).join("\n\n");
   const ptype = getPodType(ep.podcast);
-  let r = await aiRequest(prompt, type.maxTokens, ptype);
-  if (r.truncated) r = await aiRequest(prompt, Math.min(type.maxTokens * 2, 6000), ptype);   // response was cut off — one retry with more room
+  const budget = src.kind === "transcript" ? type.maxTokens + 1500 : type.maxTokens;
+  let r = await aiRequest(prompt, budget, ptype);
+  if (r.truncated) r = await aiRequest(prompt, Math.min(budget * 2, 9000), ptype);   // response was cut off — one retry with more room
   if (r.truncated) throw new Error("The AI response was cut off twice — try again in a moment.");
   const out = extractJson(r.text);
-  if (out && typeof out === "object") out.basis = ep.desc ? "notes" : "title";   // what the breakdown was actually built from
+  if (out && typeof out === "object") out.basis = src.kind;   // what the breakdown was actually built from
   return out;
 }
 
@@ -1586,15 +1673,63 @@ function parseRssFeed(xmlText, limit = Infinity){
     const pubDate = it.querySelector("pubDate")?.textContent?.trim() || "";
     const link = it.querySelector("link")?.textContent?.trim()
       || it.querySelector("enclosure")?.getAttribute("url") || "";
-    const descEl = it.querySelector("description");
-    const desc = descEl ? (descEl.textContent || "").replace(/<[^>]+>/g,"").replace(/\s+/g," ").trim().slice(0,4000) : "";
+    // Feeds put notes in different fields; take the fullest one, keeping its line breaks
+    const fields = ["description","content:encoded","itunes:summary"].map(tag => it.getElementsByTagName(tag)[0]?.textContent || "");
+    const desc = htmlToText(fields.sort((a,b) => b.length - a.length)[0]).slice(0, 8000);
+    const tr = pickTranscript(it);
     const d = pubDate ? new Date(pubDate) : null;
     const ts = d && !isNaN(d) ? d.getTime() : 0;
     const date = d && !isNaN(d) ? d.toLocaleDateString("en-GB",{ day:"numeric", month:"short", year:"numeric" }) : "";
     const gm = title.match(/^(.+?):/);
     const guest = gm ? gm[1].trim().slice(0,70) : "";
-    return { title, guest, date, ts, link, desc };
+    return { title, guest, date, ts, link, desc, transcriptUrl: tr.url, transcriptType: tr.type };
   });
+}
+
+// HTML show notes → plain text that keeps paragraphs, list items and chapter lines apart
+function htmlToText(s){
+  if (!s) return "";
+  s = String(s).replace(/<\s*br\s*\/?>/gi, "\n").replace(/<\/(p|div|li|h[1-6]|tr|ul|ol)>/gi, "\n").replace(/<li[^>]*>/gi, "• ");
+  const doc = new DOMParser().parseFromString(s, "text/html");   // decodes entities; scripts never run
+  return (doc.body ? doc.body.textContent : s).replace(/[ \t\u00a0]+/g, " ").replace(/ *\n */g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+// Podcasting 2.0 <podcast:transcript> — some feeds publish the full transcript
+function pickTranscript(it){
+  const list = [...it.getElementsByTagName("podcast:transcript")].map(t => ({ url: t.getAttribute("url") || "", type: (t.getAttribute("type") || "").toLowerCase() })).filter(t => t.url);
+  const rank = t => /text\/plain/.test(t.type) ? 0 : /vtt/.test(t.type) ? 1 : /srt|subrip/.test(t.type) ? 2 : /json/.test(t.type) ? 3 : 4;
+  return list.sort((a,b) => rank(a) - rank(b))[0] || { url:"", type:"" };
+}
+
+// Drop sponsor reads, promo codes and "follow us" lines; keep everything about the episode itself
+const PROMO_LINE = /(promo code|use code|discount code|coupon|\d+% off|sponsor|brought to you by|supported by|thanks to our partner|sign up (at|for|today)|free trial|subscribe (to|on|now)|follow (us|me|the show|.{0,25} on)|listen (on|to us)|available (on|wherever)|wherever you get your podcasts|patreon|newsletter|instagram|twitter|tiktok|facebook|linkedin|threads\.net|privacy policy|adchoices|megaphone\.fm|omnystudio|acast\.com|see .{0,40} for privacy|shop now|download the app|learn more at|visit .{0,30}\.(com|in|co)|get .{0,30} at https?:)/i;
+function cleanNotes(desc){
+  const lines = String(desc || "").split(/\n+/).map(l => l.trim()).filter(Boolean);
+  const kept = lines.filter(l => !PROMO_LINE.test(l) && !/^(https?:\/\/\S+|www\.\S+)$/i.test(l));
+  const out = kept.join("\n");
+  return out.length >= 60 ? out : lines.join("\n");
+}
+function hasChapters(text){ return (String(text).match(/^\(?\d{1,2}:\d{2}(:\d{2})?\)?/gm) || []).length >= 3; }
+
+// Transcript files come as plain text, WebVTT, SRT, JSON segments or HTML — reduce all of them to readable text
+function cleanTranscript(t, type){
+  t = String(t || "");
+  if (/json/.test(type || "") || /^\s*[\[{]/.test(t)) {
+    try {
+      const j = JSON.parse(t); const segs = Array.isArray(j) ? j : (j.segments || []);
+      let last = "";
+      t = segs.map(s => { const who = s.speaker && s.speaker !== last ? (last = s.speaker, "\n" + s.speaker + ": ") : ""; return who + (s.body || s.text || ""); }).join(" ");
+    } catch(e){}
+  } else if (/html/.test(type || "") || /<(p|div|span|cite)\b/i.test(t)) {
+    t = htmlToText(t);
+  }
+  t = t.replace(/^WEBVTT.*$/m, "").replace(/^NOTE .*$/gm, "").replace(/^\d+\s*$/gm, "")
+       .replace(/^[\d:.,]+\s*-->\s*[\d:.,]+.*$/gm, "").replace(/<[^>]+>/g, "");
+  return t.replace(/[ \t]+/g, " ").replace(/\n{2,}/g, "\n").trim();
+}
+async function fetchTranscript(ep){
+  if (!ep.transcriptUrl) return "";
+  try { return cleanTranscript(await proxyFetch(ep.transcriptUrl), ep.transcriptType); } catch(e){ return ""; }
 }
 
 async function importFeed(podKey, silent){
@@ -1675,23 +1810,29 @@ async function autoCheckFeeds(){
    and look the text up from `summaries` — no text is ever
    embedded in onclick attributes.
    ════════════════════════════════════════════════════════ */
-async function generate(prefix){
+async function generate(prefix, opts){
+  opts = opts || {};
   const id = prefix === "home" ? homeId : curId;
   const ep = episodes.find(e => e.id === id);
   if (!ep) return;
-  if (summaries[id]) { renderBreakdown(prefix, summaries[id], ep); return; }
+  if (summaries[id] && !opts.force) { renderBreakdown(prefix, summaries[id], ep); return; }
 
   const btn = document.getElementById(prefix + "-gen-btn");
   const err = document.getElementById(prefix + "-error");
+  if (btn.disabled) return;   // already generating
+  if (opts.force) showGenerateState(prefix);
   err.innerHTML = "";
   btn.disabled = true;
   btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border:1.5px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block"></span> Generating…</span>';
   try {
-    const d = await callAI(ep);
+    const d = await callAI(ep, opts.transcript);
     summaries[id] = d;
     invalidateBlob(id);
     saveSummaries();
     renderBreakdown(prefix, d, ep);
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-sparkles"></i> Generate breakdown';
+    if (opts.force) toast(d.basis === "transcript" ? "Rebuilt from the transcript" : "Breakdown regenerated");
     renderEpGroups();
     renderHomeRows();
     scheduleSave();
@@ -1699,7 +1840,42 @@ async function generate(prefix){
     btn.disabled = false;
     btn.innerHTML = '<i class="ti ti-sparkles"></i> Generate breakdown';
     err.innerHTML = '<div class="gen-error"><i class="ti ti-alert-circle"></i> ' + esc(e.message) + '</div>';
+    if (opts.force && opts.previous) {   // a failed redo keeps the old breakdown
+      renderBreakdown(prefix, opts.previous, ep);
+      toast("Couldn't regenerate: " + e.message);
+    }
   }
+}
+
+// Swap the reader back to its "generating" state so a redo shows progress in place
+function showGenerateState(prefix){
+  const res = document.getElementById(prefix + "-result");
+  const cta = document.getElementById(prefix + "-cta");
+  if (res) res.style.display = "none";
+  if (cta) cta.style.display = "";
+}
+
+function regenerate(){
+  if (!curId) return;
+  if (!summaries[curId]) { generate("panel"); return; }
+  const previous = summaries[curId];
+  generate("panel", { force: true, previous });
+}
+
+// Paste a transcript (e.g. from YouTube's "Show transcript") for a breakdown built from what was actually said
+function openTranscriptModal(){
+  document.getElementById("transcript-text").value = "";
+  document.getElementById("transcript-modal").classList.add("open");
+  document.getElementById("transcript-text").focus();
+}
+function closeTranscriptModal(){ document.getElementById("transcript-modal").classList.remove("open"); }
+function useTranscript(){
+  const raw = document.getElementById("transcript-text").value;
+  const t = cleanTranscript(raw, "text/plain");
+  if (t.length < 1500) { toast("That's too short to be a transcript. Paste the whole thing."); return; }
+  closeTranscriptModal();
+  const previous = summaries[curId];
+  generate("panel", { force: true, previous, transcript: t });
 }
 
 // Pullquotes get stable indices: pq0, pq1, … in order of appearance.
@@ -1793,7 +1969,9 @@ function renderBreakdown(prefix, d, ep){
   });
   html += '</div>';
   if (d.tags?.length) html += '<div class="tags">' + d.tags.map(t => `<button class="tag tag-btn" onclick="searchByTag('${escAttr(t)}')" title="Find everything about ${escAttr(t)}">${esc(t)}</button>`).join("") + '</div>';
-  if (d.basis) html += `<div class="bd-basis"><i class="ti ti-info-circle"></i> ${d.basis === "notes" ? "Built from the episode title and show notes, not the audio." : "Built from the title only. No show notes were available."}</div>`;
+  if (d.basis && prefix === "panel") html += `<div class="bd-basis"><i class="ti ${d.basis === "transcript" ? "ti-circle-check" : "ti-info-circle"}"></i> ${
+    d.basis === "transcript" ? "Built from the full transcript."
+    : `${d.basis === "notes" ? "Built from the show notes, not what was said." : "Built from the title only."} <button class="link-btn" onclick="openTranscriptModal()">Use a transcript</button> for a fuller breakdown.`}</div>`;
   html += '</div>';
 
   // 5-min read pane
@@ -1914,14 +2092,15 @@ function digestForAsk(ep){
     d.one_big_idea && "Big idea: " + d.one_big_idea,
     (d.executive_summary || d.core_concept || d.the_story || "").slice(0, 350),
     d.the_list?.length         && (d.list_title||"List") + ": " + d.the_list.slice(0,8).join(" | "),
-    d.key_ideas?.length        && "Ideas: "     + d.key_ideas.slice(0,4).join(" | "),
-    d.science_behind?.length   && "Science: "   + d.science_behind.slice(0,4).join(" | "),
-    d.practical_protocol?.length && "Protocol: " + d.practical_protocol.slice(0,4).join(" | "),
-    d.action_steps?.length     && "Actions: "   + d.action_steps.slice(0,3).join(" | "),
-    d.lessons_learned?.length  && "Lessons: "   + d.lessons_learned.slice(0,4).join(" | "),
+    d.key_ideas?.length        && "Ideas: "     + d.key_ideas.slice(0,8).join(" | "),
+    d.science_behind?.length   && "Science: "   + d.science_behind.slice(0,6).join(" | "),
+    d.practical_protocol?.length && "Protocol: " + d.practical_protocol.slice(0,6).join(" | "),
+    d.action_steps?.length     && "Actions: "   + d.action_steps.slice(0,5).join(" | "),
+    d.key_decisions?.length    && "Decisions: " + d.key_decisions.slice(0,5).join(" | "),
+    d.lessons_learned?.length  && "Lessons: "   + d.lessons_learned.slice(0,5).join(" | "),
     d.top_stories?.length      && "Stories: "   + d.top_stories.slice(0,3).map(st => st.headline + " — " + (st.what_happened||st.why_matters||"")).join(" | ")
   ].filter(Boolean).join("\n");
-  return `EPISODE: "${ep.title}" (${getPodcast(ep.podcast).name})\n${bits}`.slice(0, 1400);
+  return `EPISODE: "${ep.title}" (${getPodcast(ep.podcast).name})\n${bits}`.slice(0, 2600);
 }
 
 let asking = false;
