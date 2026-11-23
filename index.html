@@ -1812,6 +1812,23 @@ async function getRssFeedUrl(appleId){
   return feedUrl;
 }
 
+async function getAppleEpisodes(appleId){
+  const text = await proxyFetch(`https://itunes.apple.com/lookup?id=${encodeURIComponent(appleId)}&entity=podcastEpisode&limit=200`);
+  const rows = (JSON.parse(text).results || []).filter(r => r.wrapperType === "podcastEpisode" || r.kind === "podcast-episode");
+  return rows.map(r => {
+    const d = r.releaseDate ? new Date(r.releaseDate) : null;
+    const ts = d && !isNaN(d) ? d.getTime() : 0;
+    const title = (r.trackName || "").trim();
+    return {
+      title, guest: guessGuest(title), ts,
+      date: ts ? d.toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" }) : "",
+      link: r.trackViewUrl || "",
+      desc: htmlToText(r.description || r.shortDescription || "").slice(0, 8000),
+      audioUrl: r.episodeUrl || "", transcriptUrl: "", transcriptType: ""
+    };
+  }).filter(x => x.title);
+}
+
 function parseRssFeed(xmlText, limit = Infinity){
   const xml = new DOMParser().parseFromString(xmlText, "text/xml");
   if (xml.querySelector("parsererror")) throw new Error("Invalid RSS feed XML");
@@ -3100,8 +3117,17 @@ async function getFullFeed(podKey){
   const cached = feedCache[podKey];
   if (cached && Date.now() - cached.fetchedAt < 10*60*1000) return cached.items;
   const pod = getPodcast(podKey);
-  const feedUrl = pod.rssUrl || await getRssFeedUrl(pod.appleId);
-  const items = parseRssFeed(await proxyFetch(feedUrl));   // no limit — everything
+  let items = null, rssErr = null;
+  try {
+    const feedUrl = pod.rssUrl || await getRssFeedUrl(pod.appleId);
+    items = parseRssFeed(await proxyFetch(feedUrl));   // no limit — everything
+  } catch(e) { rssErr = e; }
+  // The podcast's own feed refused or failed: Apple's directory lists the latest 200 episodes
+  // with their show notes and audio links, which is enough for breakdowns and transcription.
+  if ((!items || !items.length) && pod.appleId) {
+    try { items = await getAppleEpisodes(pod.appleId); } catch(e) {}
+  }
+  if (!items || !items.length) throw rssErr || new Error("no episodes found in the feed");
   feedCache[podKey] = { items, fetchedAt: Date.now() };
   return items;
 }
