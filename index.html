@@ -294,6 +294,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .story-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;}
 .story-headline{font-size:14px;font-weight:600;margin-bottom:5px;}
 .bd-note{font-size:12.5px;color:var(--text-2);margin:-2px 0 8px;padding:6px 10px;border-radius:8px;background:var(--surface-2,rgba(128,128,128,.12));}
+.gen-nosrc{display:block;text-align:left;line-height:1.55;}
+.gen-nosrc b{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+.gen-nosrc p{margin:0 0 6px;}
+.gen-nosrc ul{margin:0 0 10px 18px;padding:0;}
+.gen-nosrc li{margin-bottom:4px;}
 .link-btn{background:none;border:none;padding:0;font:inherit;color:var(--accent-text);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
 .modal-sub{font-size:13.5px;line-height:1.55;color:var(--text-2);margin:-4px 0 14px;}
 #transcript-text{min-height:180px;font-size:13px;}
@@ -1305,6 +1310,46 @@ function resolvePodKey(v){
 }
 
 function normTitle(t){ return (t||"").toLowerCase().replace(/\s+/g," ").trim(); }
+
+// "Topic: Claim! | Steve Eisman" → "Steve Eisman"; "Jane Doe: How to …" → "Jane Doe"
+function guessGuest(title, podName){
+  const t = String(title || "");
+  const pipe = t.match(/\|\s*([^|]{3,40})\s*$/);
+  const name = pipe ? pipe[1].trim() : "";
+  const isShow = name && (String(podName || "").toLowerCase().includes(name.toLowerCase()) || /^(ep|episode|part|fo)\b/i.test(name));
+  if (name && !isShow && !/\|.*\|/.test(t) && /^[A-Z][\w.'’-]*(\s+[A-Z][\w.'’-]*){0,3}$/.test(name)) return name;
+  const gm = t.match(/^(.+?):/);
+  return gm ? gm[1].trim().slice(0, 70) : "";
+}
+
+// Loose title key: same episode titled slightly differently (curly vs straight quotes,
+// "| Guest" suffix, emoji, punctuation) still matches its feed entry
+function titleKey(t){
+  return String(t || "").toLowerCase().replace(/[‘’`´]/g, "'").replace(/\s+\|\s+[^|]+$/, "")
+    .replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+}
+function titleWords(t){ return new Set(titleKey(t).split(" ").filter(w => w.length > 2)); }
+// Find an episode's entry in its feed: exact → loose → most-overlapping words (published close by, if known)
+function matchFeedItem(ep, feed){
+  const exact = feed.find(fe => normTitle(fe.title) === normTitle(ep.title));
+  if (exact) return exact;
+  const k = titleKey(ep.title);
+  const loose = feed.find(fe => titleKey(fe.title) === k);
+  if (loose) return loose;
+  const words = titleWords(ep.title);
+  if (words.size < 3) return null;
+  let best = null, bestScore = 0;
+  for (const fe of feed) {
+    const fw = titleWords(fe.title);
+    let common = 0; words.forEach(w => { if (fw.has(w)) common++; });
+    let score = common / Math.max(words.size, fw.size);
+    // a shortened title whose words all appear in the feed title (e.g. the first half of it)
+    if (words.size >= 4 && common >= words.size * 0.9) score = Math.max(score, 0.72);
+    if (ep.ts && fe.ts && Math.abs(ep.ts - fe.ts) < 4 * 86400000) score += 0.15;
+    if (score > bestScore) { bestScore = score; best = fe; }
+  }
+  return bestScore >= 0.7 ? best : null;
+}
 function hashStr(str){
   let h = 5381;
   for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) >>> 0;
@@ -1453,7 +1498,8 @@ async function enrichFromFeed(ep){
   if (!ep.podcast || ep.notesV === 3) return;
   try {
     const feed = await getFullFeed(ep.podcast);
-    const hit = feed.find(fe => normTitle(fe.title) === normTitle(ep.title));
+    const hit = matchFeedItem(ep, feed);
+    ep.feedMiss = !hit;
     if (hit) {
       if (hit.desc && (hit.desc.length >= (ep.desc||"").length * 0.8 || !/\n/.test(ep.desc||""))) ep.desc = hit.desc;
       if (hit.transcriptUrl) { ep.transcriptUrl = hit.transcriptUrl; ep.transcriptType = hit.transcriptType; }
@@ -1538,24 +1584,35 @@ const TRANSCRIPT_MAX = 180000;   // characters (~45k tokens) — a 3-hour conver
 // a transcript (pasted or from the feed) beats show notes, which beat the title alone.
 async function buildSource(ep, pastedTranscript, onStatus){
   const notes = cleanNotes(ep.desc || "");
-  let transcript = (pastedTranscript || "").trim(), txSource = transcript ? "pasted" : "";
+  let transcript = (pastedTranscript || "").trim(), txSource = transcript ? "pasted" : "", txError = "";
   if (!transcript) {
     const saved = await txGet(ep.id);
     if (saved && saved.text) { transcript = saved.text; txSource = saved.source || "saved"; }
   }
   if (!transcript) { transcript = await fetchTranscript(ep); if (transcript) txSource = "feed"; }
   if (!transcript && transcribeOn) {
-    if (!ep.audioUrl) toast("No audio link for this episode, so using its show notes");
-    else {
+    if (ep.audioUrl) {
       try { onStatus && onStatus("Transcribing audio…"); transcript = await transcribeAudio(ep, onStatus); txSource = "audio"; }
-      catch(e) { toast("Couldn't transcribe the audio (" + e.message + "). Using show notes."); }
+      catch(e) { txError = e.message; if (notes.length >= 120) toast("Couldn't transcribe the audio (" + e.message + "). Using show notes."); }
     }
   }
-  const kind = transcript.length > 1500 ? "transcript" : notes ? "notes" : "title";
+  const kind = transcript.length > 1500 ? "transcript" : notes.length >= 120 ? "notes" : "title";
+  if (kind === "title") {
+    const reasons = [];
+    if (ep.feedMiss) reasons.push("This episode couldn't be matched to an episode in the podcast's feed, so there are no show notes or audio to use. This usually happens when an episode is added under a different title, such as its YouTube title.");
+    else if (!notes) reasons.push("The podcast's feed has no show notes for this episode.");
+    else reasons.push("The show notes for this episode are too short to say anything useful.");
+    if (!transcribeOn) reasons.push("Audio transcription is off.");
+    else if (txError) reasons.push("Transcribing the audio failed: " + txError);
+    else if (!ep.audioUrl) reasons.push("There's no audio link to transcribe.");
+    const e = new Error("There isn't enough to build a useful breakdown from. " + reasons.join(" "));
+    e.noSource = true; e.reasons = reasons;
+    throw e;
+  }
   if (kind === "transcript" && txSource !== "saved") await txPut(ep.id, { text: transcript, source: txSource, at: Date.now() });
   onStatus && onStatus("Writing breakdown…");
   const head = `PODCAST: ${getPodcast(ep.podcast).name}
-EPISODE: "${ep.title}"${ep.guest ? `\nGUEST: ${ep.guest}` : ""}${ep.date ? `\nPUBLISHED: ${ep.date}` : ""}`;
+EPISODE: "${ep.title}"${(guessGuest(ep.title, getPodcast(ep.podcast).name) || ep.guest) ? `\nGUEST: ${guessGuest(ep.title, getPodcast(ep.podcast).name) || ep.guest}` : ""}${ep.date ? `\nPUBLISHED: ${ep.date}` : ""}`;
   let body = "";
   if (kind === "transcript") {
     const cut = transcript.length > TRANSCRIPT_MAX;
@@ -1592,9 +1649,10 @@ const METHOD = `HOW TO WORK
 1. Map the episode first (do not output this): every distinct topic, claim, story, number, recommendation and disagreement in the source, in the order they come up.
 2. Coverage: every substantial topic in your map, and every chapter if there is a chapter list, must appear somewhere in the output. Only ads, intros and small talk may be left out.
 3. Make each item stand alone: the specific claim, then why or how it works, plus the number, example or name that makes it concrete. A bare topic ("sleep matters") fails; a claim with its reason and a concrete number or example from the source passes.
-4. No filler: nothing that would fit any episode, no motivational padding, and no point repeated across sections.
-5. Attribute: when something is the guest's opinion rather than established fact, or the host and guest disagree, say so.
-6. Before returning, check: nothing important from your map is missing, no generic items, no duplicates, every action is concrete.`;
+4. State the content, never describe the episode. Banned: "the episode focuses on", "X shares insights on", "the discussion highlights", "this underscores", quoting the title back as if it were an insight. If the title promises a reveal ("the biggest mistake", "the one habit"), say plainly what it is. If the source doesn't say, leave it out.
+5. No filler: nothing that would fit any episode, no motivational padding, and no point repeated across sections.
+6. Attribute: when something is the guest's opinion rather than established fact, or the host and guest disagree, say so.
+7. Before returning, check: nothing important from your map is missing, no generic items, no duplicates, no sentence that describes the episode instead of saying what was said, every action is concrete.`;
 
 const LIST_RULE = `NUMBERED SETS: If the title or source promises a numbered set (for example "5 habits", "7 rules", "3 mistakes"), set list_title (for example "The 5 habits") and fill the_list with every item the source reveals, each written as "Name: one or two sentences on what it is and how to do it". Include all of them when the source gives them; if it gives only some, include only those and never invent the rest. The other sections must agree with the_list. If there is no numbered set, omit list_title and the_list.`;
 
@@ -1765,8 +1823,7 @@ function parseRssFeed(xmlText, limit = Infinity){
     const d = pubDate ? new Date(pubDate) : null;
     const ts = d && !isNaN(d) ? d.getTime() : 0;
     const date = d && !isNaN(d) ? d.toLocaleDateString("en-GB",{ day:"numeric", month:"short", year:"numeric" }) : "";
-    const gm = title.match(/^(.+?):/);
-    const guest = gm ? gm[1].trim().slice(0,70) : "";
+    const guest = guessGuest(title);
     return { title, guest, date, ts, link, desc, audioUrl, transcriptUrl: tr.url, transcriptType: tr.type };
   });
 }
@@ -1925,10 +1982,18 @@ async function generate(prefix, opts){
   } catch(e) {
     btn.disabled = false;
     btn.innerHTML = '<i class="ti ti-sparkles"></i> Generate breakdown';
-    err.innerHTML = '<div class="gen-error"><i class="ti ti-alert-circle"></i> ' + esc(e.message) + '</div>';
+    err.innerHTML = e.noSource
+      ? `<div class="gen-error gen-nosrc"><b><i class="ti ti-alert-circle"></i> Not enough to go on</b>
+           <p>A breakdown written from the title alone would only repeat the title, so the app didn't make one.</p>
+           <ul>${e.reasons.map(r => `<li>${esc(r)}</li>`).join("")}</ul>
+           <div class="action-row">
+             <button class="btn btn-sm btn-primary" onclick="openTranscriptModal()"><i class="ti ti-file-text"></i> Use a transcript</button>
+             ${transcribeOn ? "" : `<button class="btn btn-sm" onclick="openSettings()"><i class="ti ti-settings"></i> Turn on audio transcription</button>`}
+           </div></div>`
+      : '<div class="gen-error"><i class="ti ti-alert-circle"></i> ' + esc(e.message) + '</div>';
     if (opts.force && opts.previous) {   // a failed redo keeps the old breakdown
       renderBreakdown(prefix, opts.previous, ep);
-      toast("Couldn't regenerate: " + e.message);
+      toast(e.noSource ? "Couldn't regenerate: there's no transcript or show notes to work from. Try Use a transcript." : "Couldn't regenerate: " + e.message);
     }
   }
 }
