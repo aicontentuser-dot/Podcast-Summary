@@ -511,6 +511,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .reader-actions{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 0.9rem;}
 .reader-foot{display:flex;justify-content:flex-end;margin-top:1rem;}
 .settings-sec{margin-bottom:1rem;}
+.settings-note{font-size:12.5px;line-height:1.5;color:var(--text-3);margin-top:8px;}
 .settings-sec h3{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-3);margin-bottom:7px;}
 .settings-sec .sync-panel,.settings-sec .ai-provider-row{margin-top:0;}
 .settings-sec .ai-provider-row{padding:4px;}
@@ -910,6 +911,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
     <div class="settings-sec"><h3>AI engine for breakdowns</h3>
   <div class="ai-provider-row" id="ai-provider-row"></div>
     </div>
+    <div class="settings-sec"><h3>Transcribe episode audio</h3>
+  <div class="ai-provider-row" id="transcribe-row"></div>
+  <p class="settings-note">When on, breakdowns are built from everything said in the episode, using AssemblyAI. It adds 1–3 minutes per episode. Each transcript is saved on this device, so Regenerate never pays to transcribe the same episode twice.</p>
+    </div>
     <div class="settings-sec"><h3>Backup</h3>
   <div class="action-row">
     <button class="btn btn-sm" onclick="exportData()"><i class="ti ti-download"></i> Export</button>
@@ -986,7 +991,7 @@ const AI_ENGINES = {
   "gemini-pro":   { label:"Gemini Pro",   provider:"gemini", model:"gemini-2.5-pro" },
 };
 function openSettings(){
-  renderAiProviderUI();
+  renderAiProviderUI(); renderTranscribeUI();
   document.getElementById("settings-modal").classList.add("open");
 }
 function closeSettings(){ document.getElementById("settings-modal").classList.remove("open"); }
@@ -994,7 +999,7 @@ function closeSettings(){ document.getElementById("settings-modal").classList.re
 function setAiProvider(p){
   aiProvider = p;
   localStorage.setItem("ai-provider", p);
-  renderAiProviderUI();
+  renderAiProviderUI(); renderTranscribeUI();
   toast(p === "claude" ? "Breakdowns will use Claude"
     : `Breakdowns will use ${AI_ENGINES[p].label} (needs GEMINI_API_KEY on your worker)`);
 }
@@ -1444,15 +1449,16 @@ async function aiRequestRaw(prompt, maxTokens, ptype, engineKey){
 
 // Catalogued episodes store no show notes; pull them from the feed at generate time
 async function enrichFromFeed(ep){
-  // Refetch once per episode with the current parser (fuller notes with line breaks + transcript link)
-  if (!ep.podcast || ep.notesV === 2) return;
+  // Refetch once per episode with the current parser (fuller notes, transcript link, audio link)
+  if (!ep.podcast || ep.notesV === 3) return;
   try {
     const feed = await getFullFeed(ep.podcast);
     const hit = feed.find(fe => normTitle(fe.title) === normTitle(ep.title));
     if (hit) {
       if (hit.desc && (hit.desc.length >= (ep.desc||"").length * 0.8 || !/\n/.test(ep.desc||""))) ep.desc = hit.desc;
       if (hit.transcriptUrl) { ep.transcriptUrl = hit.transcriptUrl; ep.transcriptType = hit.transcriptType; }
-      ep.notesV = 2;
+      if (hit.audioUrl) ep.audioUrl = hit.audioUrl;
+      ep.notesV = 3;
       if (!ep.link) ep.link = hit.link || "";
       if (!ep.guest) ep.guest = hit.guest || "";
       if (!ep.date) { ep.date = hit.date || ""; ep.ts = hit.ts || ep.ts || 0; }
@@ -1461,15 +1467,93 @@ async function enrichFromFeed(ep){
   } catch(e) { /* generate without notes if the feed is unreachable */ }
 }
 
+/* ── Transcripts: saved on this device (IndexedDB — too big for localStorage or Sheets),
+      so Regenerate never pays to transcribe the same episode twice ── */
+let txDbP = null;
+function txDb(){
+  return txDbP || (txDbP = new Promise((res, rej) => {
+    const r = indexedDB.open("podcast-transcripts", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("t");
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  }));
+}
+async function txGet(id){
+  try { const db = await txDb(); return await new Promise(res => { const q = db.transaction("t").objectStore("t").get(id); q.onsuccess = () => res(q.result || null); q.onerror = () => res(null); }); }
+  catch(e){ return null; }
+}
+async function txPut(id, val){
+  try { const db = await txDb(); await new Promise(res => { const tx = db.transaction("t", "readwrite"); tx.objectStore("t").put(val, id); tx.oncomplete = res; tx.onerror = res; }); }
+  catch(e){}
+}
+
+// On/off switch for audio transcription (Settings)
+let transcribeOn = load("transcribe-on", false);
+function setTranscribe(on){ transcribeOn = !!on; save("transcribe-on", transcribeOn); renderTranscribeUI(); toast(on ? "New breakdowns will be built from the episode audio" : "Audio transcription off"); }
+function renderTranscribeUI(){
+  const el = document.getElementById("transcribe-row");
+  if (!el) return;
+  el.innerHTML = `<div class="seg"><button class="${transcribeOn ? "" : "on"}" onclick="setTranscribe(false)">Off</button><button class="${transcribeOn ? "on" : ""}" onclick="setTranscribe(true)">On</button></div>`;
+}
+
+async function workerJson(path, body){
+  if (!workerUrl) throw new Error("Worker URL not set");
+  const res = await fetch(workerUrl + path, body ? { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) } : {});
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok || (j.error && !j.status)) throw new Error(j.error || ("HTTP " + res.status));
+  return j;
+}
+function mmss(ms){ const s = Math.round(ms / 1000); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
+
+// Send the episode's audio link to AssemblyAI and wait for the transcript.
+// The job id is saved straight away, so closing the app mid-way resumes the same job instead of paying again.
+async function transcribeAudio(ep, onStatus){
+  if (!ep.audioUrl) throw new Error("the feed has no audio link for this episode");
+  const jobs = load("doac-aai-v1", {});
+  let id = jobs[ep.id];
+  if (!id) {
+    const r = await workerJson("/transcribe", { audio_url: ep.audioUrl });
+    id = r.id; jobs[ep.id] = id; save("doac-aai-v1", jobs);
+  }
+  const t0 = Date.now();
+  while (Date.now() - t0 < 25 * 60000) {
+    let j;
+    try { j = await workerJson("/transcribe?id=" + encodeURIComponent(id)); }
+    catch(e) { if (/not found|404/i.test(e.message)) { delete jobs[ep.id]; save("doac-aai-v1", jobs); } throw e; }
+    if (j.status === "completed") {
+      const u = Array.isArray(j.utterances) && j.utterances.length ? j.utterances : null;
+      // "Speaker A: …" lines let the breakdown tell host from guest
+      return u ? u.map(x => "Speaker " + x.speaker + ": " + x.text).join("\n") : (j.text || "");
+    }
+    if (j.status === "error") { delete jobs[ep.id]; save("doac-aai-v1", jobs); throw new Error(j.error || "transcription failed"); }
+    onStatus && onStatus("Transcribing audio… " + mmss(Date.now() - t0));
+    await new Promise(r => setTimeout(r, 5000));
+  }
+  throw new Error("transcription is taking unusually long. Try again later; it will pick up the same job");
+}
+
 const TRANSCRIPT_MAX = 180000;   // characters (~45k tokens) — a 3-hour conversation fits
 
 // Builds the source block every prompt starts with, using the best material available:
 // a transcript (pasted or from the feed) beats show notes, which beat the title alone.
-async function buildSource(ep, pastedTranscript){
+async function buildSource(ep, pastedTranscript, onStatus){
   const notes = cleanNotes(ep.desc || "");
-  let transcript = (pastedTranscript || "").trim();
-  if (!transcript) transcript = await fetchTranscript(ep);
+  let transcript = (pastedTranscript || "").trim(), txSource = transcript ? "pasted" : "";
+  if (!transcript) {
+    const saved = await txGet(ep.id);
+    if (saved && saved.text) { transcript = saved.text; txSource = saved.source || "saved"; }
+  }
+  if (!transcript) { transcript = await fetchTranscript(ep); if (transcript) txSource = "feed"; }
+  if (!transcript && transcribeOn) {
+    if (!ep.audioUrl) toast("No audio link for this episode, so using its show notes");
+    else {
+      try { onStatus && onStatus("Transcribing audio…"); transcript = await transcribeAudio(ep, onStatus); txSource = "audio"; }
+      catch(e) { toast("Couldn't transcribe the audio (" + e.message + "). Using show notes."); }
+    }
+  }
   const kind = transcript.length > 1500 ? "transcript" : notes ? "notes" : "title";
+  if (kind === "transcript" && txSource !== "saved") await txPut(ep.id, { text: transcript, source: txSource, at: Date.now() });
+  onStatus && onStatus("Writing breakdown…");
   const head = `PODCAST: ${getPodcast(ep.podcast).name}
 EPISODE: "${ep.title}"${ep.guest ? `\nGUEST: ${ep.guest}` : ""}${ep.date ? `\nPUBLISHED: ${ep.date}` : ""}`;
   let body = "";
@@ -1489,7 +1573,7 @@ SHOW NOTES>>>`;
   } else {
     body = "SOURCE: the title only. There are no show notes and no transcript.";
   }
-  return { kind, text: head + "\n\n" + body };
+  return { kind, txSource, text: head + "\n\n" + body };
 }
 
 // Rules that depend on what the model actually has in front of it
@@ -1514,11 +1598,11 @@ const METHOD = `HOW TO WORK
 
 const LIST_RULE = `NUMBERED SETS: If the title or source promises a numbered set (for example "5 habits", "7 rules", "3 mistakes"), set list_title (for example "The 5 habits") and fill the_list with every item the source reveals, each written as "Name: one or two sentences on what it is and how to do it". Include all of them when the source gives them; if it gives only some, include only those and never invent the rest. The other sections must agree with the_list. If there is no numbered set, omit list_title and the_list.`;
 
-async function callAI(ep, pastedTranscript){
+async function callAI(ep, pastedTranscript, onStatus){
   await enrichFromFeed(ep);
   const type = getTypeDef(ep);
   const isNews = type === PODCAST_TYPES.news;
-  const src = await buildSource(ep, pastedTranscript);
+  const src = await buildSource(ep, pastedTranscript, onStatus);
   const prompt = [
     src.text,
     sourceRules(src.kind, isNews),
@@ -1532,7 +1616,7 @@ async function callAI(ep, pastedTranscript){
   if (r.truncated) r = await aiRequest(prompt, Math.min(budget * 2, 9000), ptype);   // response was cut off — one retry with more room
   if (r.truncated) throw new Error("The AI response was cut off twice — try again in a moment.");
   const out = extractJson(r.text);
-  if (out && typeof out === "object") out.basis = src.kind;   // what the breakdown was actually built from
+  if (out && typeof out === "object") { out.basis = src.kind; if (src.txSource) out.txSource = src.txSource; }   // what it was built from
   return out;
 }
 
@@ -1677,12 +1761,13 @@ function parseRssFeed(xmlText, limit = Infinity){
     const fields = ["description","content:encoded","itunes:summary"].map(tag => it.getElementsByTagName(tag)[0]?.textContent || "");
     const desc = htmlToText(fields.sort((a,b) => b.length - a.length)[0]).slice(0, 8000);
     const tr = pickTranscript(it);
+    const audioUrl = it.querySelector("enclosure")?.getAttribute("url") || "";
     const d = pubDate ? new Date(pubDate) : null;
     const ts = d && !isNaN(d) ? d.getTime() : 0;
     const date = d && !isNaN(d) ? d.toLocaleDateString("en-GB",{ day:"numeric", month:"short", year:"numeric" }) : "";
     const gm = title.match(/^(.+?):/);
     const guest = gm ? gm[1].trim().slice(0,70) : "";
-    return { title, guest, date, ts, link, desc, transcriptUrl: tr.url, transcriptType: tr.type };
+    return { title, guest, date, ts, link, desc, audioUrl, transcriptUrl: tr.url, transcriptType: tr.type };
   });
 }
 
@@ -1823,9 +1908,10 @@ async function generate(prefix, opts){
   if (opts.force) showGenerateState(prefix);
   err.innerHTML = "";
   btn.disabled = true;
-  btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border:1.5px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block"></span> Generating…</span>';
+  const busy = label => { btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border:1.5px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block"></span> ' + esc(label) + '</span>'; };
+  busy("Generating…");
   try {
-    const d = await callAI(ep, opts.transcript);
+    const d = await callAI(ep, opts.transcript, busy);
     summaries[id] = d;
     invalidateBlob(id);
     saveSummaries();
@@ -1970,7 +2056,7 @@ function renderBreakdown(prefix, d, ep){
   html += '</div>';
   if (d.tags?.length) html += '<div class="tags">' + d.tags.map(t => `<button class="tag tag-btn" onclick="searchByTag('${escAttr(t)}')" title="Find everything about ${escAttr(t)}">${esc(t)}</button>`).join("") + '</div>';
   if (d.basis && prefix === "panel") html += `<div class="bd-basis"><i class="ti ${d.basis === "transcript" ? "ti-circle-check" : "ti-info-circle"}"></i> ${
-    d.basis === "transcript" ? "Built from the full transcript."
+    d.basis === "transcript" ? (d.txSource === "audio" ? "Built from the full episode audio." : "Built from the full transcript.")
     : `${d.basis === "notes" ? "Built from the show notes, not what was said." : "Built from the title only."} <button class="link-btn" onclick="openTranscriptModal()">Use a transcript</button> for a fuller breakdown.`}</div>`;
   html += '</div>';
 
@@ -2914,7 +3000,7 @@ async function runBulkQueue(ids){
       bulk.current = ep.title;
       renderBulkBar();
       try {
-        const d = await callAI(ep);
+        const d = await callAI(ep, null, s => { bulk.current = ep.title + " · " + s; renderBulkBar(); });
         summaries[id] = d;
         invalidateBlob(id);
         saveSummaries();
@@ -4071,7 +4157,7 @@ function showTab(name){
   document.getElementById("tab-" + name).classList.add("visible");
   document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
   if (name === "browse")     { filtered = [...episodes]; renderEpGroups(); }
-  if (name === "saved")      { renderSaved(); renderWeeklyFocus(); renderAiProviderUI(); }
+  if (name === "saved")      { renderSaved(); renderWeeklyFocus(); renderAiProviderUI(); renderTranscribeUI(); }
   if (name === "news")       { renderNewsDigest(); generateBriefing(false); }
   renderBulkBar();
 }
