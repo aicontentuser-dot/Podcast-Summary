@@ -1428,9 +1428,14 @@ async function proxyFetch(fetchUrl){
   const res = await fetch(workerUrl + "/fetch", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ fetchUrl })
+    body: JSON.stringify({ fetchUrl, raw: true })   // ask the worker to stream the page through untouched
   });
-  const data = await res.json();
+  const body = await res.text();
+  if (res.headers.get("X-Proxy-Raw") === "1") return body;   // streamed (current worker)
+  // Older worker: the page comes wrapped in JSON
+  if (!body) throw new Error("the worker returned an empty response. The feed may be too large for the old worker; re-paste the latest worker code");
+  let data;
+  try { data = JSON.parse(body); } catch(e) { throw new Error("the worker returned an unreadable response (HTTP " + res.status + ")"); }
   if (data.error) throw new Error(data.error);
   return data.text;
 }
