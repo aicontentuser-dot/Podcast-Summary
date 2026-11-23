@@ -1494,7 +1494,13 @@ async function aiRequestRaw(prompt, maxTokens, ptype, engineKey){
   const data = await res.json();
   const tb = data.content?.find(b => b.type === "text");
   if (!tb?.text) throw new Error("No text in response: " + JSON.stringify(data).slice(0,200));
-  return { text: tb.text, truncated: data.stop_reason === "max_tokens" };
+  return {
+    text: tb.text,
+    truncated: data.stop_reason === "max_tokens",
+    // Gemini stopped early by its own choice (e.g. its recitation filter) or Claude declined
+    blocked: data.stop_reason === "blocked" || data.stop_reason === "refusal",
+    finish: data.finish_reason || data.stop_reason || ""
+  };
 }
 
 // Catalogued episodes store no show notes; pull them from the feed at generate time
@@ -1675,10 +1681,7 @@ async function callAI(ep, pastedTranscript, onStatus){
   ].filter(Boolean).join("\n\n");
   const ptype = getPodType(ep.podcast);
   const budget = src.kind === "transcript" ? type.maxTokens + 1500 : type.maxTokens;
-  let r = await aiRequest(prompt, budget, ptype);
-  if (r.truncated) r = await aiRequest(prompt, Math.min(budget * 2, 9000), ptype);   // response was cut off — one retry with more room
-  if (r.truncated) throw new Error("The AI response was cut off twice — try again in a moment.");
-  const out = extractJson(r.text);
+  const out = await requestBreakdown(prompt, budget, ptype);
   if (out && typeof out === "object") { out.basis = src.kind; if (src.txSource) out.txSource = src.txSource; }   // what it was built from
   return out;
 }
@@ -1848,6 +1851,54 @@ function parseRssFeed(xmlText, limit = Infinity){
     const guest = guessGuest(title);
     return { title, guest, date, ts, link, desc, audioUrl, transcriptUrl: tr.url, transcriptType: tr.type };
   });
+}
+
+// Ask for a breakdown and make sure a complete JSON object comes back:
+// out of room → retry with more; Gemini stopping early on its own → finish with Claude;
+// still unfinished → keep every complete section and say the end was cut off.
+async function requestBreakdown(prompt, budget, ptype){
+  const ask = async (max, engine) => {
+    let r = await aiRequest(prompt, max, ptype, engine);
+    if (r.blocked && lastEngineUsed !== "claude") {
+      toast("Gemini stopped early (" + (r.finish || "filter") + "), so Claude is finishing this one");
+      r = await aiRequest(prompt, max, ptype, "claude");
+    }
+    return r;
+  };
+  let r = await ask(budget);
+  if (r.truncated) r = await ask(Math.min(budget * 2, 12000));
+  try { return extractJson(r.text); } catch(e) {}
+  // Unfinished without saying so: one more try with plenty of room
+  r = await ask(Math.min(budget * 2, 12000));
+  try { return extractJson(r.text); } catch(e) {}
+  const partial = repairJson(r.text);
+  if (partial) { partial.partial = true; toast("The end of this breakdown was cut off. Regenerate to try for the full version."); return partial; }
+  throw new Error("The AI's reply kept getting cut off. Try Regenerate in a minute, or switch the AI engine in Settings.");
+}
+
+// Rescue an unfinished JSON reply: cut back to the last complete value and close what's open
+function repairJson(raw){
+  const t = String(raw || "").replace(/```json|```/g, "");
+  const a = t.indexOf("{");
+  if (a === -1) return null;
+  const s = t.slice(a);
+  const stack = [], safe = [];
+  let inStr = false, esc = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (inStr) { if (esc) esc = false; else if (c === "\\") esc = true; else if (c === '"') inStr = false; continue; }
+    if (c === '"') inStr = true;
+    else if (c === "{" || c === "[") stack.push(c === "{" ? "}" : "]");
+    else if (c === "}" || c === "]") { stack.pop(); safe.push({ i: i + 1, closers: stack.slice().reverse().join("") }); }
+    else if (c === ",") safe.push({ i, closers: stack.slice().reverse().join("") });
+  }
+  for (let k = safe.length - 1; k >= 0; k--) {
+    try {
+      const obj = JSON.parse(s.slice(0, safe[k].i) + safe[k].closers);
+      if (obj && typeof obj === "object" && Object.keys(obj).length >= 3) return obj;
+    } catch(e) {}
+  }
+  return null;
 }
 
 // HTML show notes → plain text that keeps paragraphs, list items and chapter lines apart
@@ -2142,6 +2193,7 @@ function renderBreakdown(prefix, d, ep){
   });
   html += '</div>';
   if (d.tags?.length) html += '<div class="tags">' + d.tags.map(t => `<button class="tag tag-btn" onclick="searchByTag('${escAttr(t)}')" title="Find everything about ${escAttr(t)}">${esc(t)}</button>`).join("") + '</div>';
+  if (d.partial && prefix === "panel") html += `<div class="bd-basis"><i class="ti ti-alert-triangle"></i> The end of this breakdown was cut off. <button class="link-btn" onclick="regenerate()">Regenerate</button> for the full version.</div>`;
   if (d.basis && prefix === "panel") html += `<div class="bd-basis"><i class="ti ${d.basis === "transcript" ? "ti-circle-check" : "ti-info-circle"}"></i> ${
     d.basis === "transcript" ? (d.txSource === "audio" ? "Built from the full episode audio." : "Built from the full transcript.")
     : `${d.basis === "notes" ? "Built from the show notes, not what was said." : "Built from the title only."} <button class="link-btn" onclick="openTranscriptModal()">Use a transcript</button> for a fuller breakdown.`}</div>`;
